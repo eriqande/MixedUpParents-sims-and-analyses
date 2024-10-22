@@ -1,0 +1,2 @@
+﻿sim_scenario,num_reps,pop_size_1,pop_size_2,mig_rate_1,mig_rate_2,prop_sampled,err_var,err_diag,miss_var,miss_diag
+WF_eric_1,10,900,900,0.06,0.02,0.5,0.01,0.004,0.25,0.25

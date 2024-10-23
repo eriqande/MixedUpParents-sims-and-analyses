@@ -1,0 +1,121 @@
+// Set up a nonWF simulation with non-overlapping generations and polygyny
+initialize() {
+	initializeSLiMModelType("nonWF");	
+	initializeSLiMOptions(keepPedigrees=T); // turn on pedigree tracking; see section 25 of the manual (25.7, pg. 679)	
+	initializeSex("A"); // Make all chromosomes autosomal
+	
+	defineConstant("n_p1", 1000); // number of "pure" RBT for the specific stream: Cyclone = 3, Langford = 47, McGee = 5
+	defineConstant("n_p2", 1000); // number of "pure" WCT for the specific stream: Cyclone = 2250, Langford = 319, McGee = 130
+		
+	defineConstant("mig_rate", 0.05); 
+	
+	defineConstant("L", 1949962539); // length of genome
+	initializeTreeSeq();
+	initializeMutationRate(0); // zero mutations forward-in-time
+	initializeMutationType("m1", 0.5, "f", 0.0); // neutral mutations
+	m1.convertToSubstitution = F; // keep loci in the simulation, even if they reach fixation
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, L);
+	
+	// Set up 29 trout chromosomes with not much recombination within them
+	ends = c(84884017, 84884018, 170364868, 170364869, 255302337, 255302338, 340358758, 340358759, 432561311, 432561312, 515492034, 515492035, 595255810, 595255811, 679034094, 679034095, 747501830, 747501831, 818558021, 818558022, 898836325, 898836326, 988491333, 988491334, 1054543576, 1054543577, 1134902301, 1134902302, 1198270468, 1198270469, 1269166547, 1269166548, 1345694384, 1345694385, 1407413604, 1407413605, 1466989977, 1466989978, 1508401989, 1508401990, 1560331576, 1560331577, 1608881719, 1608881720, 1657923568, 1657923569, 1698286047, 1698286048, 1780887703, 1780887704, 1821070223, 1821070224, 1866387099, 1866387100, 1907331003, 1907331004, 1949962539);
+	rates = c(1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09, 0.5, 1e-09);
+	initializeRecombinationRate(rates, ends);
+	
+}
+
+//Set up polygynous reproduction with an average brood size of 50
+reproduction() {
+
+	K = sim.getValue("K");
+
+	for (pop in sim.subpopulations) {
+	
+		// get males and females and randomize their order
+		females = pop.subsetIndividuals(sex="F");
+		females = sample(females, size(females), replace=F);
+		males = pop.subsetIndividuals(sex="M");
+		males = sample(males, size(females), replace=T); // Sample males with replacement (same number of females) so some males can mate with multiple females
+	
+		// go through the females until we run out of males
+		for (female in females, male in males) {
+		
+			offspringCount = rpois(1, 50);
+					
+			offspring = pop.addCrossed(female, male, count = offspringCount);
+			
+		}
+	
+	}
+	
+	// disable this callback for this cycle
+	self.active = 0;
+	return;
+
+}
+
+//Set the carrying capacity value, and initiate two populations with genetics according to a simulated .vcf file
+1 early() {
+
+	sim.setValue("K", 2000);
+
+	sim.addSubpop("p1", n_p1); // rainbow trout population
+	sim.addSubpop("p2", n_p2); // westslope population
+	
+	// Read in a .vcf that was made in R and has p1 indivs first and p2 indivs second
+    c(p1,p2).genomes.readFromVCF("slim_input.vcf", m1); // Read in a .vcf that was made in R and has RBT individuals first and WCT individuals second
+
+    sim.treeSeqRememberIndividuals(sim.subpopulations.individuals); // retains first-gen p1 and p2 individuals to determine genomic region population-of-origin; automatically recorded by default, but doesn't hurt to keep explicitly
+}
+
+//Make non-overlapping generations and make sure population growth abides carrying capacity
+early() {
+
+	for (pop in sim.subpopulations) {
+	
+	// parents die; offspring survive proportional to fitness
+	inds = pop.individuals;
+				
+	inds[inds.age > 0].fitnessScaling = 0.0;
+	
+	pop.fitnessScaling = (0.5 * sim.getValue("K")) / pop.individualCount;
+		
+	}
+	
+		// Remember all individuals (including the ones who didn't survive to become parents of the next generation) over all generations so we can plot them and see how the admixture is proceeding
+	  sim.treeSeqRememberIndividuals(sim.subpopulations.individuals);
+		
+}
+
+//Put tree recording here if you only want to remember the individuals who survived after density- and age-dependent selection
+//late() {
+//	
+//	// Remember individuals over all generations so we can plot them and see how the admixture is proceeding
+//  sim.treeSeqRememberIndividuals(sim.subpopulations.individuals);
+//  
+//}
+
+// Migration between p1 and p2 - migrants move in the first generation and don't interbreed until the second
+2:12 late() {
+
+	// plan the migration
+	n_p1mig = asInteger(round(p1.individualCount * ((asInteger(mig_rate) / 100) / 2)));
+	p1mig = sample(p1.individuals, n_p1mig);
+	n_p2mig = asInteger(round(p2.individualCount * ((asInteger(mig_rate) / 100) / 2)));
+	p2mig = sample(p2.individuals, n_p2mig);
+	
+	// then put it into effect
+	p1.takeMigrants(p2mig);
+	p2.takeMigrants(p1mig);
+}
+
+//Output .vcf files of the last three generations and the tree sequence of all individuals who lived
+10:12 late() {  // Last three years write everyone out to a separate VCF file named pX-T.vcf
+               // where X is the subpop.id and T is the cycle number
+  for (subpop in sim.subpopulations) {
+    subpop.outputVCFSample(subpop.individualCount, replace=F, filePath="p" + subpop.id + "-" + sim.cycle + ".vcf");  }
+}
+
+12 late() {
+    sim.treeSeqOutput("SLiM.trees"); //  write out trees
+}

@@ -29,8 +29,8 @@ initialize() {
 
 	sim.treeSeqRememberIndividuals(sim.subpopulations.individuals); // retains first-gen p1 and p2 individuals to determine genomic region population-of-origin;
 	                                                                // automatically recorded by default, but doesn't hurt to keep explicitly
-	p1.setMigrationRates(p2, <<<<mig_rate1>>>>); // migration rate from WCT into RBT
-	p2.setMigrationRates(p1, <<<<mig_rate2>>>>); // migration rate from RBT into WCT
+	p1.setMigrationRates(p2, <<<<mig_rate1>>>>); // mig_rate_1 is the fraction from 2 that end up migrating into population 1
+	p2.setMigrationRates(p1, <<<<mig_rate2>>>>); // mig_rate_2 is the fraction from pop 1 that end up migrating into population 2
 }
 
 

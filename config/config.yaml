@@ -4,8 +4,13 @@ sim_spec: "config/simulation_specifications.csv"
 
 # slim and marker simulation scenarios
 sim_scenarios:
-  WF_eric_1:
+  WF_simple:
     slim_base: config/slim_templates/WF_eric_test.slim
     var_freqs: config/var_freqs/cyclone-var-freqs.rds
     diag_markers: config/diag_markers/wct-rbt-yct-spp-diag-markers.rds
+  nonWF_simple:
+    slim_base: config/slim_templates/nonWF_eric_test.slim
+    var_freqs: config/var_freqs/cyclone-var-freqs.rds
+    diag_markers: config/diag_markers/wct-rbt-yct-spp-diag-markers.rds
+
 

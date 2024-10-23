@@ -14,13 +14,18 @@ sim_spec = pd.read_csv(config["sim_spec"])
 # it will change as I get more rules done
 def expand_paths():
   x = sim_spec
-  return([ expand("results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/sim-output/rep-{rep}.rds",
+  return([ expand("results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds",
     slim = x.loc[i, "sim_scenario"],
     ps1 = x.loc[i, "pop_size_1"],
     ps2 = x.loc[i, "pop_size_2"],
     mr1 = x.loc[i, "mig_rate_1"],
     mr2 = x.loc[i, "mig_rate_2"],
-    rep = range(x.loc[i, "num_reps"])) for i in range(x.shape[0])
+    rep = range(x.loc[i, "num_reps"]),
+    ppn = x.loc[i, "prop_sampled"],
+    verr = x.loc[i, "err_var"],
+    derr = x.loc[i, "err_diag"],
+    vmiss = x.loc[i, "miss_var"],
+    dmiss = x.loc[i, "miss_diag"]) for i in range(x.shape[0])
   ])
 
 
@@ -43,16 +48,35 @@ rule slim_sim:
   #conda:
   #  "/Users/eriq/mambaforge-arm64/envs/mup"
   output:
-    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/sim-output/rep-{rep}.rds"
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
   log:
     log="results/logs/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.log"
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.bmk"
   script:
     "scripts/slim_sim.R"
-  
-    
 
 
-# now, a rule to tweak a data set
 
+
+# a rule to apply genotyping error and subsampling (the tweaking) and then
+# spit the genotype data out in a MUP-ready format
+rule tweak2mup:
+  input:
+    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
+  params:
+    ppn_sampled="{ppn}",
+    var_err="{verr}",
+    diag_err="{derr}",
+    var_miss="{vmiss}",
+    diag_miss="{dmiss}"
+  #conda:
+  #  "/Users/eriq/mambaforge-arm64/envs/mup"
+  output:
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
+  log:
+    log="results/logs/tweak2mup/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+  benchmark:
+    "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+  script:
+    "scripts/slim_sim.R"

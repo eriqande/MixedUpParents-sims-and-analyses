@@ -4,12 +4,12 @@ initialize() {
 	initializeSLiMOptions(keepPedigrees=T); // turn on pedigree tracking; see section 25 of the manual (25.7, pg. 679)
 	initializeSex("A"); // Make all chromosomes autosomal
 
-	defineConstant("n_p1", <<<<pop_size1>>>>); // number of "pure" RBT for the specific stream: Cyclone = 3, Langford = 47, McGee = 5
-	defineConstant("n_p2", <<<<pop_size2>>>>); // number of "pure" WCT for the specific stream: Cyclone = 2250, Langford = 319, McGee = 130
+	defineConstant("n_p1", <<<<pop_size1>>>>); // number of founders in pop1
+	defineConstant("n_p2", <<<<pop_size2>>>>); // number of founders in pop2
 
 	defineConstant("mig_rate", 0.05);
 	defineConstant("V2M", 5); // ratio of variance to mean for number of offspring per female
-	defineConstant("PopK", 1000);
+	defineConstant("PopK", <<<<pop_size1>>>>);  // just a hack here---set the target pop size/carrying capcity for both pops to pop_size_1
 	defineConstant("Mort", c(0.0, 1.0));  // newborns have no mortality, adults have 100% mortality
 	defineConstant("L", 1949962539); // length of genome
 	initializeTreeSeq();

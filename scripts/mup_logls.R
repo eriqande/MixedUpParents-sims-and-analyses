@@ -70,18 +70,31 @@ qped <- TW$sampled_pedQ %>%
 #  left_join(qped %>% select(ped_id, ind_pop) %>% rename(ped_p1_pop = ind_pop), by = join_by(ped_p1 == ped_id)) %>%
 #  left_join(qped %>% select(ped_id, ind_pop) %>% rename(ped_p2_pop = ind_pop), by = join_by(ped_p2 == ped_id))
 
-by_pop_all <- qped %>%
-  group_by(ind_pop) %>%
-  summarise(all_ids = list(unique(ped_id)))
-
-last_generation_by_pop <- qped %>%
+kids <- qped %>%
   filter(ind_time == 0) %>%
-  group_by(ind_pop) %>%
-  summarise(last_gen_ids = list(unique(ped_id)))
+  pull(ped_id) %>%
+  unique()
 
-all_them <- last_generation_by_pop %>%
-  left_join(by_pop_all, by = join_by(ind_pop))
+all_candi <- qped %>%
+  pull(ped_id) %>%
+  unique()
 
+
+# now, we also want to keep a record of whether the parents were in the sample
+# or not.
+pars_in_samples <- qped %>%
+  filter(ped_id %in% kids) %>%
+  select(ped_id, ped_p1, ped_p2) %>%
+  mutate(
+    p1_in_sample = ped_p1 %in% all_candi,
+    p2_in_sample = ped_p2 %in% all_candi,
+    num_parents_in_sample = p1_in_sample + p2_in_sample
+  ) %>%
+  mutate(
+    ped_id = as.character(ped_id),
+    ped_p1 = as.character(ped_p1),
+    ped_p2 = as.character(ped_p2)
+  )
 
 # here is a function to run MUP when you pass it a vector of offspring and a vector
 # of parental candidates
@@ -99,5 +112,57 @@ run_mup <- function(kids, pars) {
 
 
 
-logls <- all_them %>%
-  mutate(mup_output = map2(.x = last_gen_ids, .y = all_ids, .f = run_mup))
+logls <- run_mup(kids, all_candi) %>%
+  mutate(logl_ratio = probKidParental - probKidUnrel) %>% arrange(desc(logl_ratio))
+
+
+# now, attach the age and pop information to each of these pair members
+meta <- qped %>%
+  select(ped_id, ind_pop, ind_time, admix_fract) %>%
+  rename(id = ped_id, pop = ind_pop, time = ind_time, q1 = admix_fract) %>%
+  mutate(id = as.character(id))
+
+kid_meta <- meta
+names(kid_meta) <- str_c("kid", names(meta), sep = "_")
+
+par_meta <- meta
+names(par_meta) <- str_c("par", names(meta), sep = "_")
+
+# join that stuff on there, and also join on the relationship information.
+# note that takes some ordering of the id's to make sure we have it right.
+all_pairs <- logls %>%
+  left_join(kid_meta, by = join_by(kid_id)) %>%
+  left_join(par_meta, by = join_by(par_id)) %>%
+  mutate(
+    min_id = as.character(pmin(as.integer(kid_id), as.integer(par_id))),
+    max_id = as.character(pmax(as.integer(kid_id), as.integer(par_id)))
+  ) %>%
+  left_join(
+    TW$pairwise_relats %>%
+      select(id_1, id_2, dom_relat, max_hit),
+    by = join_by(min_id == id_1, max_id == id_2)
+  ) %>%
+  select(-min_id, -max_id) %>%
+  mutate(
+    dom_relat = replace_na(dom_relat, "U"),
+    max_hit = replace_na(max_hit, 0L)
+  )
+
+
+# that is all the pairs, but, I don't want to write them all out.
+# It will be more than sufficient to write out the top 10 parents for
+# _from_each_cohort_ for each kid, and we will add in the information
+# about whether the parents were sampled
+trimmed_pairs <- all_pairs %>%
+  group_by(kid_id, par_time) %>%
+  slice(1:10) %>%
+  ungroup() %>%
+  left_join(
+    pars_in_samples,
+    by = join_by(kid_id == ped_id),
+    relationship = "many-to-one"
+  )
+
+
+# that is just what we need to make the ROC curves.  So, write it out.
+write_rds(trimmed_pairs, file = outfile, compress = "xz")

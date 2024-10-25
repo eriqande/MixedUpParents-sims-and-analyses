@@ -45,4 +45,14 @@ TW <- tweak_slim_simmed_data(
 )
 
 
+# now, we are going to add the pedigree and admixture fractions for the
+# ped_ids that were actually sampled (note that some of the ped_p1 and ped_p2
+# indivs in this tibble will not have been sampled...)
+sample_ids <- unique(TW$variable_snps$indiv)
+samp_ped <- simmed$trueQ_and_pedigree %>%
+  filter(ped_id %in% sample_ids)
+
+TW$sampled_pedQ <- samp_ped
+
+
 write_rds(TW, file = outfile, compress = "xz")

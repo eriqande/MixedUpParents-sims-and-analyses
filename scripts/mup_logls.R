@@ -18,7 +18,7 @@ if(exists("snakemake")) {
   threads <- snakemake@threads[[1]]
 } else {
   inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
-  outfile <- "test-mup-logls.rds"
+  outrds <- "test-mup-logls.rds"
   threads <- 8
 }
 
@@ -165,4 +165,4 @@ trimmed_pairs <- all_pairs %>%
 
 
 # that is just what we need to make the ROC curves.  So, write it out.
-write_rds(trimmed_pairs, file = outfile, compress = "xz")
+write_rds(trimmed_pairs, file = outrds, compress = "xz")

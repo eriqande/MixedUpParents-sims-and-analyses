@@ -1,0 +1,58 @@
+---
+title: "Quick look at 4 reps"
+output: html_notebook
+---
+
+Just need to grab the gathered ROC curves for MUP from the Snakemake output
+file and then give them a quick plot:
+```{r}
+library(tidyverse)
+
+x <- read_rds("results/summarized/all-rocs.rds") %>%
+  mutate(miss_rate = factor(var_miss_rate))
+
+# summarize the different conditions, etc.
+x %>%
+  count(scenario, cohort_inclusion, miss_rate, rep)
+```
+
+
+Plot them all.
+```{r}
+x %>%
+  ggplot(aes(x = fpr, y = tpr, colour = miss_rate, group = interaction(miss_rate, rep))) +
+  facet_grid(scenario ~ cohort_inclusion) +
+  geom_line()
+```
+```{r}
+dir.create("outputs/003", recursive = TRUE, showWarnings = FALSE)
+ggsave("outputs/003/all-reps.pdf", width = 20, height = 20)
+```
+
+
+Let's have a look at one case and color by relationship.
+```{r}
+one_run <- x %>%
+  filter(rep == 1, scenario == "nonWF_simple", cohort_inclusion == "exclude_same_cohort", miss_rate == 0.15) %>%
+  mutate(relat = str_c(dom_relat, max_hit, sep = "-"))
+```
+
+Then plot that thing:
+```{r}
+ggplot(one_run, aes(x = fpr, y = tpr, colour = relat)) +
+  geom_point(size = 0.3)
+
+dir.create("outputs/003", recursive = TRUE, showWarnings = FALSE)
+ggsave("outputs/003/relationships-wrong.pdf", width = 20, height = 20)
+```
+That is pretty cool.
+
+Let's make another one, drawn by admixture fraction.
+```{r}
+ggplot(one_run, aes(x = fpr, y = tpr, colour = kid_q1)) +
+  geom_point(size = 0.3) +
+  scale_colour_viridis_c()
+
+dir.create("outputs/003", recursive = TRUE, showWarnings = FALSE)
+ggsave("outputs/003/colored-by-admix-fracts.pdf", width = 20, height = 20)
+```

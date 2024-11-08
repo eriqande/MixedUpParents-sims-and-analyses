@@ -85,18 +85,66 @@ qped <- IN$sampled_pedQ %>%
 
 # we are going to compare individuals to candidate parents in both populations
 # in this case we are going to want to get the 0-based indexes of the kids and then
-# of all the candidates
-kids <- qped %>%
+# of all the candidates, but we also want vectors of their ped_ids
+kids_tib <- qped %>%
   filter(ind_time == 0) %>%
   mutate(ped_id = as.character(ped_id)) %>%
-  left_join(sample_indexes, by = join_by(ped_id)) %>%
+  left_join(sample_indexes, by = join_by(ped_id))
+
+kid_idxs <- kids_tib %>%
   pull(sIdx) %>%
   unique()
 
+# this vector stores the ped_ids as characters
+kids <- kids_tib %>%
+  pull(ped_id) %>%
+  unique()
 
-all_candi <- qped %>%
+
+all_candi_tib <- qped %>%
   mutate(ped_id = as.character(ped_id)) %>%
-  left_join(sample_indexes, by = join_by(ped_id)) %>%
+  left_join(sample_indexes, by = join_by(ped_id))
+
+all_candi_idxs <- all_candi_tib %>%
   pull(sIdx) %>%
   unique()
+
+# and here is the vector of ped_ids
+all_candi <- all_candi_tib %>%
+  pull(ped_id) %>%
+  unique()
+
+
+
+# now, we also want to keep a record of whether the parents were in the sample
+# or not.
+pars_in_samples <- qped %>%
+  filter(ped_id %in% kids) %>%
+  select(ped_id, ped_p1, ped_p2) %>%
+  mutate(
+    p1_in_sample = ped_p1 %in% all_candi,
+    p2_in_sample = ped_p2 %in% all_candi,
+    num_parents_in_sample = p1_in_sample + p2_in_sample
+  ) %>%
+  mutate(
+    ped_id = as.character(ped_id),
+    ped_p1 = as.character(ped_p1),
+    ped_p2 = as.character(ped_p2)
+  )
+
+
+
+# here is a function to get the HOT statistics when you pass it a vector of offspring indexes, kids, and a vector
+# of parental candidate indexes, pars
+run_HOT <- function(kids, pars) {
+  parallel::mclapply(kids, function(kid) {
+    candi <- setdiff(pars, kid)
+    calc_HOT(
+      G = geno_mat,
+      kid = kid,
+      par = candi
+    )
+  }, mc.cores = threads) %>%
+    bind_rows()
+}
 

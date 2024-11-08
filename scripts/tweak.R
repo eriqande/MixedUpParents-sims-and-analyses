@@ -31,6 +31,14 @@ if(exists("snakemake")) {
   outfile <- "test-tweak2mup.rds"
 }
 
+# get the seed for slim by hashing the output file name into an 8 digit number
+Rseed <- rlang::hash(outfile) %>%
+  str_replace_all("[^0-9]", "") %>%
+  str_sub(end = 8) %>%
+  as.integer()
+
+set.seed(Rseed)
+
 
 simmed <- read_rds(inrds)
 
@@ -54,5 +62,6 @@ samp_ped <- simmed$trueQ_and_pedigree %>%
 
 TW$sampled_pedQ <- samp_ped
 
+TW$Rseed <- Rseed
 
 write_rds(TW, file = outfile, compress = "xz")

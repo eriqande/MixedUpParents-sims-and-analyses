@@ -53,6 +53,10 @@ seed <- rlang::hash(outfile) %>%
   str_sub(end = 8) %>%
   as.integer()
 
+# divide that seed by 2 to get the R-seed
+Rseed <- floor(seed / 2)
+set.seed(Rseed)
+
 # do this explicitly so reticulate does not ask if you want to
 # make an environment
 use_condaenv(Sys.getenv("MUP_CONDA"))
@@ -70,5 +74,8 @@ simmed <- slim_sim_a_dataset(
   marker_pop_time_list = list(p1 = 9:11, p2 = 9:11),
   diagnostic_markers = diagmarkers
 )
+
+simmed$slim_seed <- seed
+simmed$R_seed <- Rseed
 
 write_rds(simmed, file = outfile, compress = "xz")

@@ -1,10 +1,4 @@
 
-
-
-
-
-# this is in development
-
 # deal with the logging
 if(exists("snakemake")) {
   # redirect output and messages/errors to the log

@@ -29,9 +29,30 @@ def expand_paths():
   ])
 
 
+# this version lets me request different files within these directories
+# with the "what" parameter
+def expand_paths_general(what = "mup_rocs.rds"):
+  x = sim_spec
+  return([ expand("results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{w}",
+    slim = x.loc[i, "sim_scenario"],
+    ps1 = x.loc[i, "pop_size_1"],
+    ps2 = x.loc[i, "pop_size_2"],
+    mr1 = x.loc[i, "mig_rate_1"],
+    mr2 = x.loc[i, "mig_rate_2"],
+    rep = range(x.loc[i, "num_reps"]),
+    ppn = x.loc[i, "prop_sampled"],
+    verr = x.loc[i, "err_var"],
+    derr = x.loc[i, "err_diag"],
+    vmiss = x.loc[i, "miss_var"],
+    dmiss = x.loc[i, "miss_diag"],
+    w = what) for i in range(x.shape[0])
+  ])
+
+
+
 
 rule all:
-  input: expand_paths()
+  input: "results/summarized/all-rocs.rds"
 
 # simulate a SLiM data set.  SLiM and R seeds are set according to output path name
 # currently assumes we are pulling samples from the last three generations (9-11)
@@ -47,6 +68,7 @@ rule slim_sim:
     mig_rate2="{mr2}",
   #conda:
   #  "/Users/eriq/mambaforge-arm64/envs/mup"
+  threads: 2 # so I don't run out of memory on my laptop
   output:
     outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
   log:
@@ -116,3 +138,17 @@ rule compute_rocs:
     "results/benchmarks/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   script:
     "scripts/compute_rocs.R"
+
+
+
+rule gather_rocs:
+  input:
+    inList=expand_paths_general(what = "mup_rocs.rds")
+  output: 
+    outrds="results/summarized/all-rocs.rds"
+  log:
+    log="results/logs/gather_rocs/log.log"
+  benchmark:
+    "results/benchmarks/gather_rocs/benchmark.bmk"
+  script:
+    "scripts/gather_rocs.R"

@@ -125,17 +125,32 @@ rule mup_logls:
     "scripts/mup_logls.R"
 
 
-
+# this is like the mup_logls rule, but it counts HOTs.  The wildcard {hot_markers} can
+# be either "both_diag_and_var" or "only_var", and that gets sent to the script as a param.
+rule hot_scores:
+  input:
+    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
+  output:
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/hot_{hot_markers}_all_pairs.rds"
+  threads: 1
+  params:
+    marker_set = lambda wc: "both" if "both_diag_and_var" in wc.hot_markers else "var" if "only_var" in wc.hot_markers else None
+  log:
+    log="results/logs/hot_scores/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{hot_markers}.log"
+  benchmark:
+    "results/benchmarks/hot_scores/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{hot_markers}.bmk"
+  script:
+    "scripts/hiphop_scores.R"
 
 rule compute_rocs:
   input:
-    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/mup_all_pairs.rds"
+    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}_all_pairs.rds"
   output:
-    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/mup_rocs.rds"
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}_rocs.rds"
   log:
-    log="results/logs/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+    log="results/logs/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}.log"
   benchmark:
-    "results/benchmarks/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+    "results/benchmarks/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}.bmk"
   script:
     "scripts/compute_rocs.R"
 
@@ -143,7 +158,11 @@ rule compute_rocs:
 
 rule gather_rocs:
   input:
-    inList=expand_paths_general(what = "mup_rocs.rds")
+    inList=[
+      expand_paths_general(what = "mup_rocs.rds"),
+      expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
+      expand_paths_general(what = "hot_only_var_rocs.rds")
+    ]
   output: 
     outrds="results/summarized/all-rocs.rds"
   log:

@@ -154,14 +154,17 @@ all_pairs <- logls %>%
 # _from_each_cohort_ for each kid, and we will add in the information
 # about whether the parents were sampled
 trimmed_pairs <- all_pairs %>%
+  arrange(kid_id, par_time, desc(logl_ratio))
   group_by(kid_id, par_time) %>%
   slice(1:10) %>%
   ungroup() %>%
+  arrange(kid_id, logl_ratio) %>%
   left_join(
     pars_in_samples,
     by = join_by(kid_id == ped_id),
     relationship = "many-to-one"
   )
+
 
 
 # that is just what we need to make the ROC curves.  So, write it out.

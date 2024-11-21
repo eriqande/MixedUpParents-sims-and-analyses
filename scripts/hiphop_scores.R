@@ -19,8 +19,8 @@ if(exists("snakemake")) {
   marker_set <- snakemake@params$marker_set  # could be var or both
 } else {
   inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
-  outrds <- "test-mup-logls.rds"
-  threads <- 8
+  outrds <- "test-hot-scores.rds"
+  threads <- 1
   marker_set <- "both"
 }
 
@@ -143,8 +143,72 @@ run_HOT <- function(kids, pars) {
       G = geno_mat,
       kid = kid,
       par = candi
-    )
+    ) %>%
+      as_tibble()
   }, mc.cores = threads) %>%
     bind_rows()
 }
+
+
+
+# now we should be able to run that
+HOTs <- run_HOT(kid_idxs, all_candi_idxs) %>%
+  mutate(hot_fract = num_hot / num_non_missing) %>%
+  arrange(kIdx, hot_fract)
+
+
+
+# now, attach the age and pop information to each of these pair members
+meta <- qped %>%
+  select(ped_id, ind_pop, ind_time, admix_fract) %>%
+  rename(id = ped_id, pop = ind_pop, time = ind_time, q1 = admix_fract) %>%
+  mutate(id = as.character(id))
+
+kid_meta <- meta
+names(kid_meta) <- str_c("kid", names(meta), sep = "_")
+
+par_meta <- meta
+names(par_meta) <- str_c("par", names(meta), sep = "_")
+
+# join that stuff on there, and also join on the relationship information.
+# note that takes some ordering of the id's to make sure we have it right.
+all_pairs <- HOTs %>%
+  left_join(sample_indexes %>% rename(kid_id = ped_id), by = join_by(kIdx == sIdx)) %>%
+  left_join(sample_indexes %>% rename(par_id = ped_id), by = join_by(pIdx == sIdx)) %>%
+  left_join(kid_meta, by = join_by(kid_id)) %>%
+  left_join(par_meta, by = join_by(par_id)) %>%
+  mutate(
+    min_id = as.character(pmin(as.integer(kid_id), as.integer(par_id))),
+    max_id = as.character(pmax(as.integer(kid_id), as.integer(par_id)))
+  ) %>%
+  left_join(
+    IN$pairwise_relats %>%
+      select(id_1, id_2, dom_relat, max_hit),
+    by = join_by(min_id == id_1, max_id == id_2)
+  ) %>%
+  select(-min_id, -max_id) %>%
+  mutate(
+    dom_relat = replace_na(dom_relat, "U"),
+    max_hit = replace_na(max_hit, 0L)
+  )
+
+
+# that is all the pairs, but, I don't want to write them all out.
+# It will be more than sufficient to write out the top 10 parents for
+# _from_each_cohort_ for each kid, and we will add in the information
+# about whether the parents were sampled
+trimmed_pairs <- all_pairs %>%
+  arrange(kid_id, par_time, hot_fract) %>%
+  group_by(kid_id, par_time) %>%
+  slice(1:10) %>%
+  ungroup() %>%
+  arrange(kid_id, hot_fract) %>%
+  left_join(
+    pars_in_samples,
+    by = join_by(kid_id == ped_id),
+    relationship = "many-to-one"
+  )
+
+write_rds(trimmed_pairs, file = outrds, compress = "xz")
+
 

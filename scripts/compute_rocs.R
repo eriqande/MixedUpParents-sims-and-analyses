@@ -24,13 +24,46 @@ if(exists("snakemake")) {
 trimmed_pairs <- read_rds(inrds)
 
 # after filtering out different candidate parent sets, this will compute the ROC
+# this is set up so that it uses a metric that increases for pairs that are
+# more likely (or have fewer mendelian incompatibilities).  We also
+# set up what kind of inference procedure we used.
 make_roc_mup <- function(X) {
-  top_2s <- X %>%
-    arrange(desc(logl_ratio)) %>%
+  if("hot_fract" %in% names(X)) {
+    X2 <- X %>%
+      mutate(
+        method = "hot",
+        metric = -hot_fract,
+        .before = kIdx
+      )
+
+  } else if("logl_ratio" %in% names(X)) {
+    X2 <- X %>%
+      mutate(
+        method = "mup",
+        metric = logl_ratio,
+        .before = kIdx
+      )
+
+  } else {
+    stop("Didn't find hot_fract or logl_ratio amongst the names")
+  }
+
+  top_2s <- X2 %>%
+    arrange(desc(metric)) %>%
+    group_by(kid_id, metric) %>%  # The lines up to the unnest are some fancy stuff to deal
+                                  # with metrics that are the same.  If the metric is the same
+                                  # we just randomly sort the individuals.
+    nest() %>%
+    mutate(
+      data2 = map(.x = data, .f = function(x) x[sample(1:nrow(x)), ]),
+      data = data2
+    ) %>%
+    select(-data2) %>%
+    unnest(cols = data) %>%
     group_by(kid_id) %>%
     slice(1:2) %>%
     ungroup() %>%
-    arrange(desc(logl_ratio))
+    arrange(desc(metric))
 
   # now, we count the max number of correct parentage assignments
   tot_trues <- top_2s %>%

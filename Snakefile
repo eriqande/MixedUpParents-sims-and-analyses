@@ -76,7 +76,7 @@ rule slim_sim:
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/slim_sim.R"
 
@@ -103,7 +103,7 @@ rule tweak2mup:
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/tweak.R"
 
@@ -126,7 +126,7 @@ rule mup_logls:
   benchmark:
     "results/benchmarks/mup_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/mup_logls.R"
 
@@ -146,7 +146,7 @@ rule hot_scores:
   benchmark:
     "results/benchmarks/hot_scores/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{hot_markers}.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/hiphop_scores.R"
 
@@ -160,7 +160,7 @@ rule compute_rocs:
   benchmark:
     "results/benchmarks/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/compute_rocs.R"
 
@@ -180,6 +180,6 @@ rule gather_rocs:
   benchmark:
     "results/benchmarks/gather_rocs/benchmark.bmk"
   envmodules:
-    "R/4.4.1"
+    "R/4.0.3"
   script:
     "scripts/gather_rocs.R"

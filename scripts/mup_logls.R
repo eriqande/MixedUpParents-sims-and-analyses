@@ -17,7 +17,8 @@ if(exists("snakemake")) {
   outrds <- snakemake@output$outrds
   threads <- snakemake@threads[[1]]
 } else {
-  inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
+  #inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
+  inrds <- "~/Downloads/tweaked2mup (1).rds"
   outrds <- "test-mup-logls.rds"
   threads <- 8
 }
@@ -154,7 +155,7 @@ all_pairs <- logls %>%
 # _from_each_cohort_ for each kid, and we will add in the information
 # about whether the parents were sampled
 trimmed_pairs <- all_pairs %>%
-  arrange(kid_id, par_time, desc(logl_ratio))
+  arrange(kid_id, par_time, desc(logl_ratio)) %>%
   group_by(kid_id, par_time) %>%
   slice(1:10) %>%
   ungroup() %>%

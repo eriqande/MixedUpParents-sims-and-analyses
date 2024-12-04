@@ -1,0 +1,39 @@
+
+executor: cluster-generic
+cluster-generic-submit-cmd:
+  mkdir -p results/slurm_logs/{rule} &&
+  sbatch
+    --partition={resources.partition}
+    --cpus-per-task={threads}
+    --time={resources.time}
+    --job-name=smk-{rule}-{wildcards}
+    --output=results/slurm_logs/{rule}/{rule}-%j-{wildcards}.out
+    --error=results/slurm_logs/{rule}/{rule}-%j-{wildcards}.err
+    --parsable
+cluster-generic-status-cmd: status-sacct-robust.sh
+cluster-generic-cancel-cmd: scancel
+cluster-generic-cancel-nargs: 400
+default-resources:
+  - partition="standard,medmem"
+  - time="48:00:00"
+restart-times: 0
+max-jobs-per-second: 10
+max-status-checks-per-second: 25
+local-cores: 1
+latency-wait: 60
+cores: 2400
+jobs: 950
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+software-deployment-method: conda
+rerun-trigger: mtime
+
+
+
+set-threads:
+  slim_sim: 1
+  mup_logls: 10
+
+set-resources:
+  - slim_sim:partition=himem

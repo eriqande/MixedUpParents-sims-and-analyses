@@ -79,3 +79,7 @@ simmed$slim_seed <- seed
 simmed$R_seed <- Rseed
 
 write_rds(simmed, file = outfile, compress = "xz")
+
+
+quit(save="no", status=0, runLast=FALSE)
+

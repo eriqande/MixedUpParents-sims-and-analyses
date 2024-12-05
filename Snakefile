@@ -129,6 +129,8 @@ rule mup_logls:
     "results/benchmarks/mup_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   envmodules:
     "R/4.0.3"
+  conda:
+    "envs/bedtools.yaml"
   script:
     "scripts/mup_logls.R"
 

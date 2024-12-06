@@ -8,7 +8,7 @@ have something to do with the reticulate package and its conda environment.
 
 At any rate, you can run it like this:
 ```sh
-snakemake -np --use-envmodules --keep-incomplete --profile hpcc-profiles/slurm/sedna
+snakemake -np --use-envmodules --keep-incomplete --until slim_sim --profile hpcc-profiles/slurm/sedna
 ```
 and once that is done, the outputs will still be there and you can continue with:
 ```sh

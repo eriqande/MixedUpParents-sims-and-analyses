@@ -82,9 +82,9 @@ early() {
 2: late() {
 
 	// plan the migration
-	n_p1mig = asInteger(round(p1.individualCount * <<<<mig_rate2>>>>));  // number migrating from p1 into p2
+	n_p1mig = asInteger(round(asFloat(p1.individualCount * <<<<mig_rate2>>>>)));  // number migrating from p1 into p2
 	p1mig = sample(p1.individuals, n_p1mig);
-	n_p2mig = asInteger(round(p2.individualCount * <<<<mig_rate1>>>>)); // number migrating from p2 into p1
+	n_p2mig = asInteger(round(asFloat(p2.individualCount * <<<<mig_rate1>>>>))); // number migrating from p2 into p1
 	p2mig = sample(p2.individuals, n_p2mig);
 
 	// then put it into effect

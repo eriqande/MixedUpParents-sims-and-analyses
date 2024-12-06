@@ -97,7 +97,7 @@ rule tweak2mup:
     var_miss="{vmiss}",
     diag_miss="{dmiss}"
   #conda:
-  #  "/Users/eriq/mambaforge-arm64/envs/mup"
+  #  "/Users/jaredgrummer/miniconda3/envs/slim-env"
   output:
     outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
   log:
@@ -105,11 +105,24 @@ rule tweak2mup:
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   envmodules:
-    "R/4.0.3"
+    "R/4.3.3"
   script:
     "scripts/tweak.R"
 
 
+# a rule to run Sequoia
+rule run_sequoia:
+  input:
+    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds",
+    slim_inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
+  output:
+    seq_results="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/seq-results.rds"
+  log:
+    log="results/logs/sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+  benchmark:
+    "results/benchmarks/sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+  script:
+    "scripts/sequoia.R"  
 
 
 # get the log-likelihoods for all pairs between the last generation and the last 3-generations.

@@ -23,5 +23,10 @@ Note, the --use-conda on the second line is to have bedtools for mup_logls.
 You gotta define a MUP_CONDA variable, too. see the readme for MixedUpSlimSims for that.
 
 
+## To-Dos:
+
+1. Write a separate ROC rule for sequoia using the tibble that Jared has already made.
+2. In sequoia.R figure out how to use only the variable markers or both sets.
+
 
 

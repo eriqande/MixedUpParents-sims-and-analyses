@@ -96,8 +96,6 @@ rule tweak2mup:
     diag_err="{derr}",
     var_miss="{vmiss}",
     diag_miss="{dmiss}"
-  #conda:
-  #  "/Users/jaredgrummer/miniconda3/envs/slim-env"
   output:
     outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
   log:
@@ -105,7 +103,7 @@ rule tweak2mup:
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
   envmodules:
-    "R/4.3.3"
+    "R/4.0.3"
   script:
     "scripts/tweak.R"
 
@@ -188,7 +186,9 @@ rule gather_rocs:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
-      expand_paths_general(what = "hot_only_var_rocs.rds")
+      expand_paths_general(what = "hot_only_var_rocs.rds"),
+      #expand_paths_general(what = "sequoia_both_diag_and_var_rocs.rds"),
+      #expand_paths_general(what = "sequoia_only_var_rocs.rds")
     ]
   output: 
     outrds="results/summarized/all-rocs.rds"

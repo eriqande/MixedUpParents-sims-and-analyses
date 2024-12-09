@@ -71,21 +71,11 @@ sequoia_par_run <- sequoia(GenoM = seq.mat, LifeHistData = seq_metadata.df,
                            MaxSibshipSize = 500,
                            Module = "par", Plot = F,
                            Tassign = 0,
-                           Tfilter = -2e05,
+                           Tfilter = -2e100,
                            quiet = "verbose")
 
 
 
-
-###########################################
-##### Try getting all LLRs----not really easily done....
-############################################
-
-
-#OHLLR_test <- CalcOHLLR(Pedigree = as.data.frame(ped), GenoM = seq.mat, LifeHistData = seq_metadata.df,
-#                           Tassign = 0,
-#                           Tfilter = -2e05,
-#                           quiet = "verbose")
 
 #####################################################
 ##### Check the accuracy of the Sequoia results #####

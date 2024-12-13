@@ -82,7 +82,7 @@ make_roc_mup <- function(X) {
     mutate(
       tpr = cumsum(dom_relat == "PO") / tot_trues,
       num_false = cumsum(dom_relat != "PO"),
-      fpr = num_false / tot_candi_kid
+      fpr = num_false / (tot_candi_kid * 2.0)  # each kid has two parents to assign
     )
 
   roc_values

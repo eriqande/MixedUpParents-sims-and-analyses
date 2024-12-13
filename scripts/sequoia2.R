@@ -181,8 +181,7 @@ tot_poss_tp <- sum(ready_for_roc$parent_in_sample)
 tot_candi_kid_par <- nrow(ready_for_roc)
 
 
-# We are going to let the FPR be the fraction of all candidate kids made up to a
-# certain point (likelihood) that are incorrect.
+# We are going to let the FPR be the fraction of all candidate kids that were in error
 roc <- ready_for_roc %>%
   mutate(
     tpr = cumsum(parent_correct) / tot_poss_tp,
@@ -190,3 +189,6 @@ roc <- ready_for_roc %>%
     fpr = num_false / tot_candi_kid_par
   )
 
+
+
+write_rds(roc, seq_roc_results)

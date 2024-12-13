@@ -74,7 +74,7 @@ make_roc_mup <- function(X) {
     sum()
 
   # get the total number of candidate offspring, too
-  tot_candi_kid <- n_distinct(top2s$kid_id)
+  tot_candi_kid <- n_distinct(top_2s$kid_id)
 
   # and calculate the fraction of true-positives achieved, as well as the
   # fraction of false positives

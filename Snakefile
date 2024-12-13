@@ -1,3 +1,6 @@
+# These rules run pretty quickly, so we make them local rules
+localrules: hot_scores,compute_rocs,gather_rocs
+
 # this is a snakefile to orchestrate and run the simulations for the MUP paper.
 # We have designed simulations with data that look like trout populations.
 # Each simulated data set is analyzed by MixedUpParents, HipHop, and Sequoia.
@@ -109,18 +112,24 @@ rule tweak2mup:
 
 
 # a rule to run Sequoia
+# note the wildcards:
+#  - seq_cohort: cohort excluded or not
+#  - seq_mark:  whether including the diagnostic markers or just the variable ones
 rule run_sequoia:
   input:
     inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds",
-    slim_inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
   output:
-    seq_results="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/seq-results.rds"
+    seq_sim_results="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/sequoia/{seq_cohort}-{seq_mark}-simresults.rds",
+    seq_roc_results="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/sequoia/{seq_cohort}-{seq_mark}-rocresults.rds",
+  params:
+    which_markers="{seq_mark}",
+    cohort_situation="{seq_cohort}"
   log:
-    log="results/logs/sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+    log="results/logs/run_sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{seq_cohort}-{seq_mark}.log"
   benchmark:
-    "results/benchmarks/sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+    "results/benchmarks/run_sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{seq_cohort}-{seq_mark}.bmk"
   script:
-    "scripts/sequoia.R"  
+    "scripts/sequoia2.R"  
 
 
 # get the log-likelihoods for all pairs between the last generation and the last 3-generations.
@@ -187,8 +196,7 @@ rule gather_rocs:
       expand_paths_general(what = "mup_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
       expand_paths_general(what = "hot_only_var_rocs.rds"),
-      #expand_paths_general(what = "sequoia_both_diag_and_var_rocs.rds"),
-      #expand_paths_general(what = "sequoia_only_var_rocs.rds")
+      [expand(x, sc = ["exclude_same_cohort"], sm = ["only_var", "both_diag_and_var"]) for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
     ]
   output: 
     outrds="results/summarized/all-rocs.rds"

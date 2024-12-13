@@ -1,3 +1,4 @@
+# Compute the ROC curves from the MUP and HipHop outputs
 
 # deal with the logging
 if(exists("snakemake")) {
@@ -18,8 +19,7 @@ if(exists("snakemake")) {
 } else {
   #inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_all_pairs.rds"
   inrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/hot_only_var_all_pairs.rds"
-
-  outfile <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds"
+  outrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds"
 }
 
 
@@ -73,13 +73,16 @@ make_roc_mup <- function(X) {
     pull(num_parents_in_sample) %>%
     sum()
 
+  # get the total number of candidate offspring, too
+  tot_candi_kid <- n_distinct(top2s$kid_id)
+
   # and calculate the fraction of true-positives achieved, as well as the
   # fraction of false positives
   roc_values <- top_2s %>%
     mutate(
       tpr = cumsum(dom_relat == "PO") / tot_trues,
       num_false = cumsum(dom_relat != "PO"),
-      fpr = num_false / max(num_false)
+      fpr = num_false / tot_candi_kid
     )
 
   roc_values

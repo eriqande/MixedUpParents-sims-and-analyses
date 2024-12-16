@@ -20,7 +20,12 @@ if(exists("snakemake")) {
     "results/scenario-WF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-1/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds",
     "results/scenario-WF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-2/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds"
   )
-  outrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds"
+
+  # alternatively, to just find all that might be there, we can do something like this:
+  #  inList <- as.list(list.files(pattern = "(rocs|rocresults)\\.rds", recursive=TRUE))
+
+
+  outrds <- "results/manually-gathered-rocs.rds"
 }
 
 

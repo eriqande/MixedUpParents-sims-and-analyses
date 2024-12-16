@@ -8,12 +8,13 @@ file and then give them a quick plot:
 ```{r}
 library(tidyverse)
 
-x <- read_rds("results/summarized/all-rocs.rds") %>%
+#x <- read_rds("results/summarized/all-rocs.rds") %>%
+x <- read_rds("stored-results/manually-gathered-rocs.rds") %>%  
   mutate(miss_rate = factor(var_miss_rate))
 
 # summarize the different conditions, etc.
 x %>%
-  count(scenario, cohort_inclusion, miss_rate, rep, remainder)
+  count(scenario, cohort_inclusion, miss_rate, rep, remainder) %>% View()
 ```
 
 
@@ -26,7 +27,7 @@ x %>%
 ```
 ```{r}
 dir.create("outputs/003", recursive = TRUE, showWarnings = FALSE)
-ggsave("outputs/003/all-reps-HOT-included.pdf", width = 15, height = 10)
+ggsave("outputs/003/all-reps-with-HOT-and-Sequoia.pdf", width = 15, height = 10)
 ```
 
 

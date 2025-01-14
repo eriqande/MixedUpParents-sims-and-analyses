@@ -35,13 +35,12 @@ x2 <- x %>%
 
 Plot them all.
 ```{r}
-g <- x2 %>%
+x2 %>%
   ggplot(aes(x = fpr, y = tpr, colour = descriptor, group = interaction(descriptor, rep))) +
   facet_grid(miss_rate ~ scenario + cohort_inclusion) +
   geom_line() +
   scale_colour_brewer(type = "qual", palette = "Set1")
 
-g
 ```
 
 

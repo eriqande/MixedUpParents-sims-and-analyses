@@ -15,19 +15,39 @@ x <- read_rds("stored-results/manually-gathered-rocs.rds") %>%
 # summarize the different conditions, etc.
 x %>%
   count(scenario, cohort_inclusion, miss_rate, rep, remainder) %>% View()
+
+# we need to name these better
+x2 <- x %>%
+  mutate(
+    full_sib_treatment = ifelse(is.na(full_sib_treatment), "none", full_sib_treatment),
+    descriptor = case_match(
+      remainder,
+      "exclude_same_cohort-both_diag_and_var-rocresults.rds" ~ "sequoia-diag-and-var",
+      "exclude_same_cohort-only_var-rocresults.rds" ~ "sequoia-only-var",
+      "hot_both_diag_and_var_rocs.rds" ~ "HOT-diag-and-var",
+      "hot_only_var_rocs.rds" ~ "HOT-only-var",
+      "mup_rocs.rds" ~ "MUP"
+    ),
+    descriptor = str_c(descriptor, full_sib_treatment, sep = "---")
+  )
 ```
 
 
 Plot them all.
 ```{r}
-x %>%
-  ggplot(aes(x = fpr, y = tpr, colour = remainder, group = interaction(remainder, rep))) +
+g <- x2 %>%
+  ggplot(aes(x = fpr, y = tpr, colour = descriptor, group = interaction(descriptor, rep))) +
   facet_grid(miss_rate ~ scenario + cohort_inclusion) +
-  geom_line()
+  geom_line() +
+  scale_colour_brewer(type = "qual", palette = "Set1")
+
+g
 ```
+
+
 ```{r}
 dir.create("outputs/003", recursive = TRUE, showWarnings = FALSE)
-ggsave("outputs/003/all-reps-with-HOT-and-Sequoia.pdf", width = 15, height = 10)
+ggsave("outputs/003/all-reps-with-HOT-and-Sequoia-and-MUP-full-sib-treatment.pdf", width = 15, height = 10)
 ```
 
 

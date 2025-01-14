@@ -22,10 +22,10 @@ if(exists("snakemake")) {
   )
 
   # alternatively, to just find all that might be there, we can do something like this:
-  #  inList <- as.list(list.files(pattern = "(rocs|rocresults)\\.rds", recursive=TRUE))
+  #  inList <- as.list(list.files(path = "results", pattern = "(rocs|rocresults)\\.rds", recursive=TRUE, full.names = TRUE))
 
 
-  outrds <- "results/manually-gathered-rocs.rds"
+  outrds <- "stored-results/manually-gathered-rocs.rds"
 }
 
 
@@ -34,7 +34,7 @@ if(exists("snakemake")) {
 big_tib <- lapply(inList, function(x) read_rds(x) %>% mutate(path = x) %>% select(path, everything())) %>%
   bind_rows()
 
-big_tib %>%
+bt2 <- big_tib %>%
   extract(
     path,
     into = c(
@@ -54,5 +54,7 @@ big_tib %>%
     regex = "results/scenario-(.+)/ps1-(.+)-ps2-(.+)-mr1-(.+)-mr2-(.+)/rep-(.+)/ppn-(.+)-verr-(.+)-derr-(.+)-vmiss-(.+)-dmiss-(.+)/(.+)$",
     remove = FALSE,
     convert = TRUE
-  )  %>%
-  write_rds(file = outrds, compress = "xz")
+  )
+
+
+  write_rds(bt2, file = outrds, compress = "xz")

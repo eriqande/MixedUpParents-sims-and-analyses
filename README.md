@@ -26,3 +26,28 @@ You gotta define a MUP_CONDA variable, too. see the readme for MixedUpSlimSims f
 
 
 
+
+
+## Notes on scenarios:
+
+**Langford simulations**
+
+Migration rates: symmetrical at 0, 2, 5, and 10%
+Missing indiv rate: 0, 25, 50, 75%
+Missing locus rate: 0, 0.15, 0.25, 0.5
+
+5 reps of each.
+
+Don't bother with Sequoia for the same cohort included runs.  
+
+Calculate number of markers shared for each pair.
+
+
+**Sequoia Runs with smaller sample sizes**
+
+**Other cases**
+
+Fst = 0, hack things up so that we can tease out how much performace is due to SOS
+model vs better-estimated allele freqs.
+
+

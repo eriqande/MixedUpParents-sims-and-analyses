@@ -15,11 +15,13 @@ library(MixedUpParents)
 if(exists("snakemake")) {
   inrds  <- snakemake@input$inrds
   outrds <- snakemake@output$outrds
+  outnumLoc <- snakemake@output$outnumLoc
   threads <- snakemake@threads[[1]]
 } else {
   inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
   #inrds <- "~/Downloads/tweaked2mup (1).rds"
   outrds <- "test-mup-logls.rds"
+  outnumLoc <- "test-mup-numloc.rds"
   threads <- 8
 }
 
@@ -168,5 +170,12 @@ trimmed_pairs <- all_pairs %>%
 
 
 
+
+# we do, however, want to keep information about the number of shared loci in everyone
+num_loci <- all_pairs %>% select(kid_id, par_id, nonMissingDiag, nonMissingVar)
+
 # that is just what we need to make the ROC curves.  So, write it out.
 write_rds(trimmed_pairs, file = outrds, compress = "xz")
+
+# subsample the num_loci tib to get 200,000 random pairs
+write_rds(num_loci %>% slice_sample(n = 2e5), file = outnumLoc, compress = "xz")

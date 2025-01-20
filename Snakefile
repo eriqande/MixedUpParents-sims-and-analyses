@@ -92,8 +92,8 @@ rule slim_sim:
     log="results/logs/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.log"
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.bmk"
-  #conda:
-  #  "/home/eanderson/mambaforge/envs/mixed-up-parents"
+  conda:
+    "/home/eanderson/mambaforge/envs/mixed-up-parents"
   envmodules:
     "R/4.0.3"
   script:

@@ -19,10 +19,11 @@ snakemake -np --use-envmodules --keep-incomplete --until slim_sim --profile hpcc
 ```
 
 and once that is done, the outputs will still be there and you can
-continue with:
+continue by simply removing the `.snakemake/incomplete` directory and
+then doing:
 
 ``` sh
-snakemake -np --use-envmodules --use-conda --ignore-incomplete --local-cores 9 --profile hpcc-profiles/slurm/sedna
+snakemake -np --use-envmodules --use-conda --local-cores 19 --profile hpcc-profiles/slurm/sedna
 ```
 
 Total PITA. Gonna have to figure out why it is failing, but we can use

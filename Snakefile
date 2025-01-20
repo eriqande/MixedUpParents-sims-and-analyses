@@ -214,8 +214,8 @@ rule gather_rocs:
   input:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
-      expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
-      expand_paths_general(what = "hot_only_var_rocs.rds"),
+     #expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
+     # expand_paths_general(what = "hot_only_var_rocs.rds"),
       SEQUOIA_FIRST_RUN 
     ]
   output: 

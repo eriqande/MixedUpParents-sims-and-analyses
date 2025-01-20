@@ -34,15 +34,15 @@ def expand_paths():
 
 # this version lets me request different files within these directories
 # with the "what" parameter
-def expand_paths_general(what = "mup_rocs.rds"):
-  x = sim_spec
+def expand_paths_general(spec = sim_spec, what = "mup_rocs.rds"):
+  x = spec
   return([ expand("results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{w}",
     slim = x.loc[i, "sim_scenario"],
     ps1 = x.loc[i, "pop_size_1"],
     ps2 = x.loc[i, "pop_size_2"],
     mr1 = x.loc[i, "mig_rate_1"],
     mr2 = x.loc[i, "mig_rate_2"],
-    rep = range(x.loc[i, "num_reps"]),
+    rep = range(1, x.loc[i, "num_reps"] + 1),
     ppn = x.loc[i, "prop_sampled"],
     verr = x.loc[i, "err_var"],
     derr = x.loc[i, "err_diag"],
@@ -51,6 +51,20 @@ def expand_paths_general(what = "mup_rocs.rds"):
     w = what) for i in range(x.shape[0])
   ])
 
+
+
+
+# here we get a list of the sequoia files we want
+SEQUOIA_ALL_FILES = [
+  expand(x, sc = ["exclude_same_cohort", "include_same_cohort"], sm = ["only_var", "both_diag_and_var"]) 
+  for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
+
+
+# here we get things only for the big runs at the moment.  Things we hope will finish
+filtered_spec = sim_spec[sim_spec["miss_var"] <= 0.15].reset_index(drop=True)
+SEQUOIA_FIRST_RUN = [
+  expand(x, sc = ["exclude_same_cohort"], sm = ["only_var"]) 
+  for x in expand_paths_general(spec = filtered_spec, what = "sequoia/{sc}-{sm}-rocresults.rds")]
 
 
 
@@ -193,13 +207,16 @@ rule compute_rocs:
 
 
 
+
+
+
 rule gather_rocs:
   input:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
       expand_paths_general(what = "hot_only_var_rocs.rds"),
-      [expand(x, sc = ["exclude_same_cohort"], sm = ["only_var", "both_diag_and_var"]) for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
+      SEQUOIA_FIRST_RUN 
     ]
   output: 
     outrds="results/summarized/all-rocs.rds"

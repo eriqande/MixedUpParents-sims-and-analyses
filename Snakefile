@@ -1,5 +1,5 @@
 # These rules run pretty quickly, so we make them local rules
-localrules: hot_scores,compute_rocs,gather_rocs
+localrules: compute_rocs,gather_rocs
 
 # this is a snakefile to orchestrate and run the simulations for the MUP paper.
 # We have designed simulations with data that look like trout populations.
@@ -224,8 +224,8 @@ rule gather_rocs:
   input:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
-     #expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
-     # expand_paths_general(what = "hot_only_var_rocs.rds"),
+      expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
+      expand_paths_general(what = "hot_only_var_rocs.rds"),
       SEQUOIA_FIRST_RUN 
     ]
   output: 

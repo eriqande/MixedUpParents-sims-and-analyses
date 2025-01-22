@@ -6,6 +6,7 @@ localrules: hot_scores,compute_rocs,gather_rocs
 # Each simulated data set is analyzed by MixedUpParents, HipHop, and Sequoia.
 
 import pandas as pd
+from itertools import chain
 
 # The runs are configured by using tabular configuration, with that file
 # specified in the config file.
@@ -62,10 +63,19 @@ SEQUOIA_ALL_FILES = [
 
 # here we get things only for the big runs at the moment.  Things we hope will finish
 filtered_spec = sim_spec[sim_spec["miss_var"] <= 0.15].reset_index(drop=True)
-SEQUOIA_FIRST_RUN = [
+SEQUOIA_FIRST_RUN_FULL = [
   expand(x, sc = ["exclude_same_cohort"], sm = ["only_var"]) 
   for x in expand_paths_general(spec = filtered_spec, what = "sequoia/{sc}-{sm}-rocresults.rds")]
 
+# flatten that list
+SEQUOIA_FIRST_RUN_FULL = list(chain.from_iterable(SEQUOIA_FIRST_RUN_FULL))
+
+# But, some of those did not finish so want to remove those from the list:
+with open("config/black-lists/SEQUOIA_FIRST_RUN_FAILS.txt") as f:
+    blacklist = set(line.strip() for line in f)
+
+# Perform a set difference with SEQUOIA_FIRST_RUN
+SEQUOIA_FIRST_RUN = list(set(SEQUOIA_FIRST_RUN_FULL) - set(blacklist))
 
 
 rule all:

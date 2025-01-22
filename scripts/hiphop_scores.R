@@ -18,7 +18,7 @@ if(exists("snakemake")) {
   threads <- snakemake@threads[[1]]
   marker_set <- snakemake@params$marker_set  # could be var or both
 } else {
-  inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
+  inrds  <- "test-tweaked2mup.rds"
   outrds <- "test-hot-scores.rds"
   threads <- 1
   marker_set <- "both"

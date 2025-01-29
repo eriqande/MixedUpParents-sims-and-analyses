@@ -1,0 +1,92 @@
+---
+title: "Figuring out the big ROC curve plots"
+output: html_notebook
+---
+
+
+After doing the Cyclone based big runs the different levels of things that
+actually have different levels are:
+
+- `scenario`:  WF and nonWF
+- `mig_rate1` and `mig_rate2`:  These are identical to one another, with 4 values.
+- `samp_ppn`: 4 levels
+- var and diag miss rates.  Not parsed perfectly. but 0, 0.15, 0.25, 0.5
+- cohort inclusion: 2 levels
+- full_sib_treatment: two levels (but also some NA's...)
+
+
+Note, when method = NA know it is sequoia.
+
+So, for looking at all of these, I think we can do like what we did before,
+but look at different sampling ppn and mig_rates on different pages.
+
+That is 16 different pages.  Yowzers.  That will work for a supplement...maybe.
+
+We can do that by nesting stuff up.
+```{r}
+library(tidyverse)
+dir.create("outputs/004", recursive = TRUE, showWarnings = FALSE)
+
+BR <- read_rds("stored-results/BIG-RUN-all-rocs.rds")
+
+nesto <- BR %>%
+  group_by(mig_rate1, mig_rate2, samp_ppn) %>%
+  nest()
+
+rm(BR)
+```
+
+
+Now, each one of these nested ones we should be able to plot in a consistent way
+on a separate page.  Here is a function to do that:
+```{r}
+roc_page <- function(mig_rate, samp_ppn, x) {
+
+  x2 <- x %>%
+    mutate(
+      method = replace_na(method, "sequoia"),
+      full_sib_treatment = replace_na(full_sib_treatment, "none"),
+      miss_rate = var_miss_rate
+    ) %>%
+    mutate(
+      approach = case_when(
+        method == "sequoia" ~ "Sequoia (variable only)",
+        remainder == "hot_both_diag_and_var_rocs.rds" ~ "HOT (diagnostic + variable)",
+        remainder == "hot_only_var_rocs.rds" ~ "HOT (variable only)",
+        method == "mup" & full_sib_treatment == "discarded_likely_FS" ~ "MixedUpParents (w/FS-calc)",
+        method == "mup" & full_sib_treatment == "none" ~ "MixedUpParents (no FS-calc)",
+        TRUE ~ NA_character_
+      )
+    )
+  
+  
+  g <- x2 %>%
+    ggplot(aes(x = fpr, y = tpr, colour = approach, group = interaction(approach, rep))) +
+    facet_grid(miss_rate ~ scenario + cohort_inclusion) +
+    geom_line() +
+    scale_colour_brewer(type = "qual", palette = "Set1") +
+    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
+  
+  outpath <- str_c("outputs/004/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
+  
+  ggsave(
+    g, 
+    filename = outpath, 
+    width = 15, height = 15
+  )
+  
+  outpath
+  
+}
+```
+And now, we can use it like this:
+```{r}
+BOING <- nesto %>% 
+  mutate(
+    plot = pmap_chr(
+      .l = list(mig_rate = mig_rate1, samp_ppn = samp_ppn, x = data),
+      .f = roc_page,
+      .progress = TRUE
+    )
+  )
+```

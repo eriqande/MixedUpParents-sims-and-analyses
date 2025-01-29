@@ -1,0 +1,99 @@
+---
+title: "Getting Pictures of the Admixture"
+output: html_notebook
+---
+
+From out main simulations, I want to make pictures of the admixture fractions for
+some representative cases.  But I don't want to write a rule to do this, so I will
+just implement it by hand on the cluster after having done the one big run.
+
+First off, find the files on the cluster like this:
+```r
+files <- Sys.glob("results/scenario-cyclone*/*/rep-1/slim-output.rds")
+
+names(files) <- files
+
+AllRep1 <- lapply(files, function(x) {
+  tmp <- read_rds(x)
+  tmp$true_segs %>% 
+    filter(ind_time == 0) %>%
+    group_by(ind_pop, ind_time, ind_id, trit) %>%
+    summarise(tot = sum(right - left))
+}) %>%
+  bind_rows(.id = "path")
+  
+write_rds(AllRep1, file = "stored-results/TrueSegSummary-BigRun-Rep1s.rds", compress="xz")
+```
+
+And then I copied that to stored_results on my laptop.
+
+Then we can read it and make some plots:
+```{r}
+library(tidyverse)
+
+dir.create("outputs/005", recursive = TRUE, showWarnings = FALSE)
+dat <- read_rds("stored-results/TrueSegSummary-BigRun-Rep1s.rds") %>%
+  extract(
+    path,
+    into = c("scenario", "mig_rate"),
+    regex = "results/scenario-(.+)/ps1-1200-ps2-1200-mr1-([0-9.]+)-mr"
+  )
+```
+
+Now, we want to sort each fish in its own group by admixture fraction.
+```{r}
+ranks <- dat %>%
+  group_by(scenario, mig_rate, ind_pop, ind_id) %>%
+  summarise(AdmixA = sum( (trit == 2) * 2 * tot + (trit == 4) * tot) / (2 * sum(tot))) %>%
+  arrange(scenario, mig_rate, ind_pop, desc(AdmixA)) %>%
+  mutate(rank = 1:n())
+
+
+dat2 <- dat %>%
+  left_join(ranks, by = join_by(scenario, mig_rate, ind_pop, ind_id)) %>%
+  ungroup() %>%
+  mutate(
+    Ancestry = case_match(
+      trit,
+      2 ~ "AA",
+      4 ~ "AB",
+      6 ~ "BB",
+      .default = NA
+    )
+  ) %>%
+  group_by(scenario, mig_rate,ind_pop, ind_id) %>%
+  mutate(
+    Fraction = tot / sum(tot)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    scenario = case_match(
+      scenario,
+      "cyclone_nonWF" ~ "non-Wright-Fisher",
+      "cyclone_WF" ~ "Wright-Fisher"
+    ),
+    ind_pop = case_match(
+      ind_pop,
+      1 ~ "Pop 1",
+      2 ~ "Pop 2"
+    )
+  ) 
+
+  
+```
+
+
+Now we should be able to make some plots:
+```{r}
+g <- ggplot(dat2, aes(x = rank, y = Fraction, fill = Ancestry)) +
+  geom_col() +
+  facet_grid(mig_rate ~ scenario + ind_pop, scales = "free_x") +
+  theme_bw() +
+  xlab("Individuals arranged according to admixture fraction") +
+  scale_fill_manual(values = c(AA = "#d7191c", AB = "#fdae61", BB = "#2c7bb6"))
+
+
+ggsave(g, filename = "outputs/005/ancestry-fracts-of-sims.pdf", width = 10, height = 12)
+
+g
+```

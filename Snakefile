@@ -61,6 +61,8 @@ SEQUOIA_ALL_FILES = [
   for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
 
 
+SEQUOIA_AGG = SEQUOIA_ALL_FILES
+
 # here we get things only for the big runs at the moment.  Things we hope will finish
 filtered_spec = sim_spec[sim_spec["miss_var"] <= 0.15].reset_index(drop=True)
 SEQUOIA_FIRST_RUN_FULL = [
@@ -72,10 +74,14 @@ SEQUOIA_FIRST_RUN_FULL = list(chain.from_iterable(SEQUOIA_FIRST_RUN_FULL))
 
 # But, some of those did not finish so want to remove those from the list:
 with open("config/black-lists/SEQUOIA_FIRST_RUN_FAILS.txt") as f:
-    blacklist = set(line.strip() for line in f)
+  blacklist = set(line.strip() for line in f)
 
 # Perform a set difference with SEQUOIA_FIRST_RUN
 SEQUOIA_FIRST_RUN = list(set(SEQUOIA_FIRST_RUN_FULL) - set(blacklist))
+
+# Only do a portion of the sequoia runs, unless sequoia_full is in the config
+if 'sequoia_full' not in config:
+  SEQUOIA_AGG = SEQUOIA_FIRST_RUN
 
 
 rule all:
@@ -226,7 +232,7 @@ rule gather_rocs:
       expand_paths_general(what = "mup_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
       expand_paths_general(what = "hot_only_var_rocs.rds"),
-      SEQUOIA_FIRST_RUN 
+      SEQUOIA_AGG 
     ]
   output: 
     outrds="results/summarized/all-rocs.rds"

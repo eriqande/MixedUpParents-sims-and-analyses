@@ -1,0 +1,18 @@
+# path to tabular configuration
+sim_spec: "config/sim_spec_120.csv"
+
+# this is used to tell the Snakefile to do all the sequoia runs
+sequoia_full: True
+
+# slim and marker simulation scenarios
+sim_scenarios:
+  small_cyclone_WF:
+    slim_base: config/slim_templates/WF_model.slim
+    var_freqs: config/var_freqs/cyclone-var-freqs.rds
+    diag_markers: config/diag_markers/wct-rbt-yct-spp-diag-markers.rds
+  small_cyclone_nonWF:
+    slim_base: config/slim_templates/nonWF_model.slim
+    var_freqs: config/var_freqs/cyclone-var-freqs.rds
+    diag_markers: config/diag_markers/wct-rbt-yct-spp-diag-markers.rds
+
+

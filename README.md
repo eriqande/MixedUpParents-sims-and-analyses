@@ -53,6 +53,16 @@ Calculate number of markers shared for each pair.
 
 **Sequoia Runs with smaller sample sizes**
 
+I am making a separate config for these. I am going to do:
+
+- sampling fract = 0.5
+- missing genotype rate = 0.25 or 0.5
+- all migration rates
+- pop sizes of 120
+
+I hope that will finish. This is all specified in a separate config
+called `config/config_120.yaml`.
+
 **Other cases**
 
 Fst = 0, hack things up so that we can tease out how much performace is
@@ -89,6 +99,29 @@ will finish in a reasonable amount of time appear to be:
 - exclude_same_cohort
 - var only
 - missing locus proportion of 0, 0.15
+
+# Making the small (120 indivs) simulations
+
+``` r
+library(tidyverse)
+sim_specs <- expand_grid(
+  sim_scenario = c("small_cyclone_WF", "small_cyclone_nonWF"),
+  num_reps = 5,
+  pop_size_1 = 120,
+  pop_size_2 = 120,
+  nesting(
+    mig_rate_1 = c(0.0, 0.02, 0.05, 0.1),
+    mig_rate_2 = c(0.0, 0.02, 0.05, 0.1),
+  ),
+  prop_sampled = c(0.5),
+  err_var = 0.01,
+  err_diag = 0.004,
+  nesting(
+    miss_var = c(0.25, 0.5),
+    miss_diag = c(0.25, 0.5),
+  )
+)
+```
 
 Even at that, with full sampling of individuals we might have some
 really long ones. But at least that will give us only 2 \* 5 \* 4 \* 4

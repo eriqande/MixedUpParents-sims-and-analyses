@@ -1,0 +1,10 @@
+results/scenario-small_cyclone_WF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/include_same_cohort-both_diag_and_var-simresults.rds
+results/scenario-small_cyclone_WF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/include_same_cohort-both_diag_and_var-rocresults.rds
+results/scenario-small_cyclone_WF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/exclude_same_cohort-both_diag_and_var-simresults.rds
+results/scenario-small_cyclone_WF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/exclude_same_cohort-both_diag_and_var-rocresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/exclude_same_cohort-both_diag_and_var-simresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-3/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/exclude_same_cohort-both_diag_and_var-rocresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-5/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.5-dmiss-0.5/sequoia/include_same_cohort-both_diag_and_var-simresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-5/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.5-dmiss-0.5/sequoia/include_same_cohort-both_diag_and_var-rocresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-2/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/include_same_cohort-both_diag_and_var-simresults.rds
+results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.0-mr2-0.0/rep-2/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/sequoia/include_same_cohort-both_diag_and_var-rocresults.rds

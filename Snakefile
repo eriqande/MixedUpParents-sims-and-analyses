@@ -60,8 +60,13 @@ SEQUOIA_ALL_FILES = [
   expand(x, sc = ["exclude_same_cohort", "include_same_cohort"], sm = ["only_var", "both_diag_and_var"]) 
   for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
 
+# I threw this in to remove 10 files from 5 runs that took longer than 48 hours
+with open("config/black-lists/sequoia-short-run-timeouts.txt") as f:
+  timeouts = set(line.strip() for line in f)
 
-SEQUOIA_AGG = SEQUOIA_ALL_FILES
+# Perform a set difference with SEQUOIA_ALL_FILES
+SEQUOIA_AGG = list(set(SEQUOIA_ALL_FILES) - set(timeouts))
+
 
 # here we get things only for the big runs at the moment.  Things we hope will finish
 filtered_spec = sim_spec[sim_spec["miss_var"] <= 0.15].reset_index(drop=True)

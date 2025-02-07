@@ -59,6 +59,8 @@ def expand_paths_general(spec = sim_spec, what = "mup_rocs.rds"):
 SEQUOIA_ALL_FILES = [
   expand(x, sc = ["exclude_same_cohort", "include_same_cohort"], sm = ["only_var", "both_diag_and_var"]) 
   for x in expand_paths_general(what = "sequoia/{sc}-{sm}-rocresults.rds")]
+  
+SEQUOIA_ALL_FILES = list(chain.from_iterable(SEQUOIA_ALL_FILES))
 
 # I threw this in to remove 10 files from 5 runs that took longer than 48 hours
 with open("config/black-lists/sequoia-short-run-timeouts.txt") as f:

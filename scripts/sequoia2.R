@@ -68,14 +68,38 @@ seq.mat <- make_matrix(select(diag_and_var_snps.tib,-indiv),
 
 ##### Make the life history data frame #####
 
-seq_metadata.df <- ind_info$sampled_pedQ %>% select(ped_id, ind_time, sex) %>%
+seq_metadata <- ind_info$sampled_pedQ %>% select(ped_id, ind_time, sex) %>%
   distinct() %>% #Get rid of one duplicate row per individual
-  mutate(sex = replace(sex, sex == 0, 2)) %>% #Change sex code from 0 to 2
-  mutate(ind_time = case_when(ind_time == 0 ~ 11, #Change birth years
-                              ind_time == 1 ~ 10,
-                              ind_time == 2 ~ 9)) %>%
-  rename(ID = ped_id, BirthYear = ind_time, Sex = sex) %>% #Rename the columns
+  mutate(sex = 3) %>% # Change sex to 3 for unknown
+  mutate(
+    ind_time = case_when(
+      ind_time == 0 ~ 11, #Change birth years
+      ind_time == 1 ~ 10,
+      ind_time == 2 ~ 9
+    ),
+    Year.last = case_when(
+      ind_time == 11 ~ 12L,
+      ind_time == 10 ~ 11L,
+      ind_time == 9 ~ 11L
+    )
+  ) %>%
+  rename(ID = ped_id, BirthYear = ind_time, Sex = sex)
+
+
+# default "exclude_same_cohort" scenario we give it the above life history data
+seq_metadata.df <- seq_metadata %>%
   as.data.frame()
+
+
+
+# if we include the same cohort, then we set BirthYear to missing for all individuals
+if(cohort_situation == "include_same_cohort") {
+  seq_metadata.df <- seq_metadata %>%
+    select(-Year.last) %>%
+    mutate(BirthYear = NA) %>%
+    as.data.frame()
+}
+
 
 
 # some notes here:

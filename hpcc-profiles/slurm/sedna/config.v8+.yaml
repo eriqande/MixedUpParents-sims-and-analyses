@@ -14,8 +14,8 @@ cluster-generic-status-cmd: status-sacct-robust.sh
 cluster-generic-cancel-cmd: scancel
 cluster-generic-cancel-nargs: 400
 default-resources:
-  - partition="standard"
-  - time="24:00:00"
+  - partition="standard,medmem"
+  - time="48:00:00"
 restart-times: 0
 max-jobs-per-second: 10
 max-status-checks-per-second: 25
@@ -37,3 +37,5 @@ set-threads:
 
 set-resources:
   - slim_sim:partition=himem
+  - mup_logls:partition=medmem
+  - run_sequoia:partition=standard

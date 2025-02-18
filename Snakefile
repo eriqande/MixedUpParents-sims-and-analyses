@@ -195,6 +195,28 @@ rule mup_logls:
     "scripts/mup_logls.R"
 
 
+
+
+# rule very much like mup logls but it calculates the logls as if it is just a single
+# population, ignoring the admixture
+rule naive_logls:
+  input:
+    inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
+  output:
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/naive_logl_all_pairs.rds",
+  threads: 8
+  log:
+    log="results/logs/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+  benchmark:
+    "results/benchmarks/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+  envmodules:
+    "R/4.0.3"
+  script:
+    "scripts/ckmrsim_logls.R"
+
+
+
+
 # this is like the mup_logls rule, but it counts HOTs.  The wildcard {hot_markers} can
 # be either "both_diag_and_var" or "only_var", and that gets sent to the script as a param.
 rule hot_scores:
@@ -237,6 +259,7 @@ rule gather_rocs:
   input:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
+      expand_paths_general(what = "naive_logl_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
       expand_paths_general(what = "hot_only_var_rocs.rds"),
       SEQUOIA_AGG 

@@ -19,7 +19,7 @@ if(exists("snakemake")) {
 } else {
   #inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_all_pairs.rds"
   #inrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/hot_only_var_all_pairs.rds"
-  inrds = "test-mup-logls.rds"
+  inrds = "test-ckmr-logls.rds"
   outrds = "test-compute-rocs.rds"
   #outrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds"
 }
@@ -27,9 +27,16 @@ if(exists("snakemake")) {
 
 trimmed_pairs <- read_rds(inrds)
 
-MUP_used <- FALSE
+Method <- "HOT"  # This is just the default.  We do other things when it is MUP or NAIVE_LOGL
 if("logl_ratio" %in% names(trimmed_pairs)) {
-  MUP_used <- TRUE
+  if("kIdx" %in% names(trimmed_pairs)) {
+    Method <- "MUP"
+  } else if("D2_indiv" %in% names(trimmed_pairs)) {
+    Method <- "NAIVE_LOGL"
+  } else {
+    stop("Was expecting it to be MUP or NAIVE_LOGL")
+  }
+
 }
 
 # after filtering out different candidate parent sets, this will compute the ROC
@@ -46,7 +53,7 @@ make_roc_mup <- function(X) {
         .before = kIdx
       )
 
-  } else if("logl_ratio" %in% names(X)) {
+  } else if("logl_ratio" %in% names(X) && "kIdx" %in% names(X)) {
     X2 <- X %>%
       mutate(
         method = "mup",
@@ -54,6 +61,13 @@ make_roc_mup <- function(X) {
         .before = kIdx
       )
 
+  } else if("logl_ratio" %in% names(X) && "D2_indiv" %in% names(X)) {
+    X2 <- X %>%
+      mutate(
+        method = "naive_logl",
+        metric = logl_ratio,
+        .before = D2_indiv
+      )
   } else {
     stop("Didn't find hot_fract or logl_ratio amongst the names")
   }
@@ -112,13 +126,26 @@ first_ret <- list(
 # as parents, first.
 next_ret <- NULL
 
-if(MUP_used) {
+if(Method == "MUP") {
   next_ret <- list(
     exclude_same_cohort = trimmed_pairs %>%
       filter(par_time > 0, probKidParental > probKidFullSib) %>%
       make_roc_mup(),
     include_same_cohort = trimmed_pairs %>%
       filter(probKidParental > probKidFullSib) %>%
+      make_roc_mup()
+  ) %>%
+    bind_rows(.id = "cohort_inclusion") %>%
+    mutate(full_sib_treatment = "discarded_likely_FS", .after = cohort_inclusion)
+}
+
+if(Method == "NAIVE_LOGL") {
+  next_ret <- list(
+    exclude_same_cohort = trimmed_pairs %>%
+      filter(par_time > 0, POFS > 0.0) %>%
+      make_roc_mup(),
+    include_same_cohort = trimmed_pairs %>%
+      filter(POFS > 0.0) %>%
       make_roc_mup()
   ) %>%
     bind_rows(.id = "cohort_inclusion") %>%

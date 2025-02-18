@@ -40,7 +40,7 @@ rm(BR)
 Now, each one of these nested ones we should be able to plot in a consistent way
 on a separate page.  Here is a function to do that:
 ```{r}
-roc_page <- function(mig_rate, samp_ppn, x) {
+roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004") {
 
   x2 <- x %>%
     mutate(
@@ -67,7 +67,7 @@ roc_page <- function(mig_rate, samp_ppn, x) {
     scale_colour_brewer(type = "qual", palette = "Set1") +
     ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
   
-  outpath <- str_c("outputs/004/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
+  outpath <- str_c(outfolder, "/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
   
   ggsave(
     g, 
@@ -90,3 +90,7 @@ BOING <- nesto %>%
     )
   )
 ```
+
+
+That is cool.  Now, let's crunch out the small-pop (120) runs.
+

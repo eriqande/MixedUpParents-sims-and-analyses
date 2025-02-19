@@ -111,7 +111,8 @@ make_roc_mup <- function(X, remove_likely_sibs = FALSE) {
       group_by(kid_id) %>%
       slice(1:2) %>%
       ungroup() %>%
-      arrange(desc(metric))
+      arrange(sib_toss, desc(metric))  # it is important to filter here again on sib-toss first, because you don't
+                                       # want to include any of the likely sibs until all other options have been exhausted.
   }
 
   # now, we count the max number of correct parentage assignments

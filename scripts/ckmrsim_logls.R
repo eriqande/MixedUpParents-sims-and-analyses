@@ -13,7 +13,6 @@ if(exists("snakemake")) {
 }
 
 library(tidyverse)
-library(MixedUpParents)
 library(CKMRsim)
 
 # get the parameter values, and list some default ones for testing
@@ -22,12 +21,12 @@ if(exists("snakemake")) {
   inrds  <- snakemake@input$inrds
   outrds <- snakemake@output$outrds
   outnumLoc <- snakemake@output$outnumLoc
-  which_markers <- snakemake@params$which_markers
+  marker_set <- snakemake@params$marker_set
   threads <- snakemake@threads[[1]]
 } else {
   inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds"
   outrds <- "test-ckmr-logls.rds"
-  which_markers <- "only_var"
+  marker_set <- "only_var"
   threads <- 8
 }
 
@@ -61,13 +60,13 @@ make_long_genos <- function(X) {
 var_long_genos <- make_long_genos(TW$variable_snps)
 diag_long_genos <- make_long_genos(TW$spp_diag_snps)
 
-if(which_markers == "both_diag_and_var") {
+if(marker_set == "both_diag_and_var") {
   long_genos <- bind_rows(var_long_genos, diag_long_genos)
 
-} else if(which_markers == "only_var") {
+} else if(marker_set == "only_var") {
   long_genos <- var_long_genos
 } else {
-  stop("Unkown value of which_markers: ", which_markers)
+  stop("Unkown value of marker_set: ", marker_set)
 }
 
 

@@ -203,12 +203,14 @@ rule naive_logls:
   input:
     inrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/tweaked2mup.rds"
   output:
-    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/naive_logl_all_pairs.rds",
+    outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/naive_logl_{marker_set}_all_pairs.rds"
   threads: 8
+  params:
+    marker_set="{marker_set}"
   log:
-    log="results/logs/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
+    log="results/logs/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}.log"
   benchmark:
-    "results/benchmarks/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
+    "results/benchmarks/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}.bmk"
   envmodules:
     "R/4.0.3"
   script:
@@ -259,7 +261,8 @@ rule gather_rocs:
   input:
     inList=[
       expand_paths_general(what = "mup_rocs.rds"),
-      expand_paths_general(what = "naive_logl_rocs.rds"),
+      expand_paths_general(what = "naive_logl_both_diag_and_var_rocs.rds"),
+      expand_paths_general(what = "naive_logl_only_var_rocs.rds"),
       expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
       expand_paths_general(what = "hot_only_var_rocs.rds"),
       SEQUOIA_AGG 

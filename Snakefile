@@ -1,5 +1,5 @@
 # These rules run pretty quickly, so we make them local rules
-localrules: compute_rocs,gather_rocs
+localrules: gather_rocs
 
 # this is a snakefile to orchestrate and run the simulations for the MUP paper.
 # We have designed simulations with data that look like trout populations.

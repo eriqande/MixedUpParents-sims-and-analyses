@@ -121,6 +121,8 @@ wide %>%
   ) %>%
   write_tsv(., file = indfile)
 
+
+
 # now, we want to make a binary fileset out of that
 CALL <- paste(
   "plink --file",
@@ -131,6 +133,11 @@ CALL <- paste(
 
 system(CALL)
 
+# The following two steps will be done in a temp directory
+# because both ADMIXTURE and relateAdmix seem to just write
+# their output files out in the current directory.  We will then
+# grab the results from those and copy them over or read them
+# in and process them as necessary.
 
 
 # now, we need to run admixture on this
@@ -145,6 +152,7 @@ system(CALL2)
 # relateAdmix -plink binary.bed -f binary.2.P -q binary.2.Q -P 8
 
 #### We also want to get some backstory on all the samples  ####
+# this stuff is analogous/identical to what gets done in mup_logls.R
 # this preps a data frame
 qped <- TW$sampled_pedQ %>%
   filter(anc_pop == 1)  # get just one row per indiv
@@ -180,19 +188,55 @@ pars_in_samples <- qped %>%
 
 #### Read in the results ####
 
+# We want to read in the results and have them be very similar in structure
+# to the mup_logls results so that we can analyse them in the same way.
+
+# relateAdmix compares pairs only once with low index in column one and
+# higher index in column 2.  mup_logls, on the other hand, compares each
+# kid in the first (kid_id) column to all others.  So, we are going to have to
+# modify the output of relateAdmix so as to:
+#  1. add rows with the pairs listed in reverse order
+#  2. retain only those rows that have a kid listed in the first column
+#
+# throughout that we also want to keep a min_id and a max_id column to be sure
+# we are joining correctly onto the pairwise relationships tibble.
+
 # then read in the results and join the ids back on there, and sort
 # the id columns so the lower value is always first. (it already is, but
-# just in case...)
+# just in case...) and add the true relationshps on there
 inds_tib <- read_tsv(indsfile)
 ra_output <- vroom(output_k) %>%
   left_join(inds_tib %>% rename(indiv1 = indiv), by = join_by(ind1 == idx) ) %>%
-  left_join(inds_tib %>% rename(indiv2 = indiv), by = join_by(ind2 == idx) )
+  left_join(inds_tib %>% rename(indiv2 = indiv), by = join_by(ind2 == idx) ) %>%
+  mutate(
+    min_id = as.character(pmin(as.integer(indiv1), as.integer(indiv2))),
+    max_id = as.character(pmax(as.integer(indiv1), as.integer(indiv2)))
+  ) %>%
+  left_join(
+    TW$pairwise_relats %>%
+      select(id_1, id_2, dom_relat, max_hit),
+    by = join_by(min_id == id_1, max_id == id_2)
+  ) %>%
+  select(-min_id, -max_id) %>%
+  mutate(
+    dom_relat = replace_na(dom_relat, "U"),
+    max_hit = replace_na(max_hit, 0L)
+  )
 
 
+# just gonna look at these values for a moment
+
+# stick the pairwise relationships on there:
 
 
+g <- ggplot(
+  ra_output %>% mutate(relat = str_c(dom_relat, max_hit, sep = "-")),
+  aes(x = k1, y = k2, colour = relat)) +
+  geom_point() +
+  facet_wrap(~relat)
 
 
+ggsave(g, filename = "scatter.jpg", width = 14, height = 14)
 
 
 

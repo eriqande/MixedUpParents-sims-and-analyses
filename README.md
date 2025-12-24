@@ -129,3 +129,14 @@ really long ones. But at least that will give us only 2 \* 5 \* 4 \* 4
 
 I will modify the aggregation functions to have an option to do only
 those.
+
+I did that, and I was able to run it with:
+
+``` sh
+snakemake -np --use-envmodules --use-conda --local-cores 3  --configfile config/config_120.yaml  --profile hpcc-profiles/slurm/sedna
+```
+
+5 of the sequoia runs had not finished in 48 hours. So I just removed
+them from the targets. Those files are in
+
+    config/black-lists/sequoia-short-run-timeouts.txt

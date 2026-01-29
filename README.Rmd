@@ -147,3 +147,229 @@ targets.  Those files are in
 config/black-lists/sequoia-short-run-timeouts.txt
 ```
 
+
+
+## Getting The RelateAdmix part going
+
+### Some important points here:
+
+1. RelateAdmix has to be somewhere on the PATH.  It is not deployed via conda.
+2. One has to think about which marker sets get used for different parts of the analysis.
+   Even if `marker_set` is `only_var` we still want to add the diagnostic SNPs for the
+   admixture analysis.  This is done in `relate-admix.R`.  So, ADMIXTURE is run with all the
+   markers, regardless of what `marker_set` is. 
+3. Because we might have different marker sets for ADMIXTURE and RelateAdmix, we have to
+   process the allele frequendies (.P) file out of ADMIXTURE to make sure it only has
+   allele frequencies for the markers that RelateAdmix is using.
+4. It appears that both RelateAdmix and ADMIXTURE just spit output into the current
+   working directory, which is really, really lame, and makes for a lot of BS overhead
+   moving files around.
+   
+### Some Verifications and Checking
+
+I have things running on my laptop with previously simulated data and  I can
+run it like this:
+```sh
+snakemake  --cores 8  -p results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_all_pairs.rds
+
+# note that the outputs that generates includes:
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_all_pairs.rds
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/plink.ped
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/binary.bed
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/plink.map
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/admixture_plink.ped
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/admixture_binary.bed
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/admixture_plink.map
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/relate_admix_locus_mask.txt
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/inds_file.tsv
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_intermediate/output.k
+```
+If I want to do different version of it I can run the reps from 0 to 3 and the marker_set can
+be `only_var` or `both_diag_and_var`.
+
+At this juncture I really need to verify that things are working the way that I think the
+are.   I will do this by confirming that:
+
+1. ADMIXTURE is giving Q estimates that make sense.
+2. The estimated allele frequencies from ADMIXTURE also make sense.
+
+Let us quickly do that.  I just ran the rule to get:
+```
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_all_pairs.rds
+```
+And part of the input was:
+```
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds
+```
+Let's see if we have what we need to verify things:
+```{r}
+library(tidyverse)
+
+# the tweaked2mup result has the admixture fractions, at least 
+t2m <- read_rds("results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/tweaked2mup.rds")
+
+# get the inferred Q values
+binQ <- read_table(
+  "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_intermediate/binary.2.Q",
+  col_names = c("Q1", "Q2")
+)
+
+# and also get the order of the individuals from the pedfile
+admixture_IDs <- read_tsv(
+  "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_intermediate/admixture_plink.ped",
+  col_names = FALSE
+) %>%
+  mutate(X2 = str_replace(X2, "x", "")) %>%
+  pull(X2)
+
+binQ2 <- binQ %>%
+  mutate(ID = as.integer(admixture_IDs))
+
+# Now we can compare the Q's to the truth
+trueQs <- t2m$sampled_pedQ %>%
+  select(ped_id, anc_pop, admix_fract) %>%
+  pivot_wider(names_from = anc_pop, values_from = admix_fract)
+
+Q_compare <- trueQs %>%
+  left_join(binQ2, by = join_by(ped_id == ID))
+
+# looking at that, it is clear that anc_pop == 2 is what ADMIXTURE labelled as Q1
+# so, here it goes:
+ggplot(Q_compare, aes(x = `2`, y = Q1)) +
+  geom_point() +
+  xlab("True Admixture Fraction") +
+  ylab("ADMIXTURE Estimated Fraction") +
+  geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed")
+```
+
+OK.  It is clear that the individuals in there are all correct, but that ADMIXTURE
+doesn't do a great job of estimating this stuff. I am guessing that is because we
+have different amounts of markers that are diagnostic and variable from each of the
+populations.  But I am satisfied that we have all the IDs of the individuals, correct,
+etc.
+
+So, now it would be good to check up on the estimated allele frequencies.  
+```{r}
+# get the inferred allele freqs that were given to RelateAdmix
+binP <- read_table(
+  "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_intermediate/binary.2.P",
+  col_names = c("P1", "P2")
+)
+
+# there are 628 of those. We know they will be in chromosome order.  And these
+# are the variable ones only. I suspect they were from Cyclone or Langford.  Let's
+# get both and check
+cyc <- read_rds("config/var_freqs/cyclone-var-freqs.rds")
+lang <- read_rds("config/var_freqs/langford-var-freqs.rds")
+
+# OK. Cyclone has 628 markers, so lets add these on there and see what it looks like
+P_compare <- bind_cols(
+  cyc,
+  binP
+)
+
+# This is sort of weird, because P1 looks like RBT, but the orientiation of the alleles
+# is different, so we expect things to either fall on the y=x or the y=1-x line.
+# Let's plot it:
+ggplot(P_compare, aes(x = RBT, y = P1)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed") +
+  geom_abline(intercept = 1, slope = -1, colour = "red", linetype = "dashed")
+```
+
+And we can do the same thing with WCT and P2:
+```{r}
+ggplot(P_compare, aes(x = WCT, y = P2)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed") +
+  geom_abline(intercept = 1, slope = -1, colour = "red", linetype = "dashed")
+```
+
+OK! This is unambiguous: RelateAdmix is getting all the data just as it should be,
+and it still really blows chunks at finding parents in the data. From what I have seen,
+I am not expecting it to perform well.
+
+Another interesting thing here is that seeing these results makes it pretty clear
+that ADMIXTURE and RelateAdmix that assume a single Q-value for each individual
+and that markers are effectively unlinked and independent within that are pretty
+bad.  This excites me for the prospects of doing admixture like things on local
+chunks in a chunkyG framework.  I think that is going to work very well, at least
+in cases that are not dominated by isolation by distance.
+
+
+### What metric should we use to rank pairs? 
+
+I had originally thought I would use the coefficient of relatedness: $2k_1 + k_2$, but
+this is untenable because so many pairs have k2=1, which is just weird, right---that
+is what you expect from monozygous twins.  So RelateAdmix is not performing well.
+
+But, I am going to do my due diligence to try to make it work as well as it can,
+so let's look at the distribution of these things.  From the var_only data set
+we were working with above, we have values for all of the pairs.
+These results had been generated into:
+```
+results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_all_pairs.rds
+```
+But I have copied them into:
+```
+stored-results/relate_admix_only_var_all_pairs.rds
+```
+And we can get it now, and count up how many pairs are in it:
+```{r}
+raov <- read_rds("stored-results/relate_admix_only_var_all_pairs.rds")
+raov %>%
+  filter(max_hit <= 2) %>%
+  mutate(relat = str_c(dom_relat, "-", max_hit)) %>%
+  count(relat)
+
+
+```
+
+OK.  That is a lot of unrelated pairs.  I want to make a plot with some
+unrelated pairs on it, but I don't want any more than FC-2's because I want
+the facets to all have the same x-limits.  So let us grab 11158  U's as well.
+We will randomly sample those 11158 as necessary and then we will
+plot the k values ordered descending on k1, and then on k2 to see how things
+look.
+```{r, fig.height=15, fig.width=9}
+set.seed(5)
+arranged_pairs <- raov %>%
+  filter(max_hit <= 2) %>%
+  mutate(relat = str_c(dom_relat, "-", max_hit)) %>%
+  filter(dom_relat != "U") %>%
+  bind_rows(
+    .,
+    raov %>% filter(dom_relat == "U") %>% mutate(relat = "U-0") %>% slice_sample(n = 11158)
+  ) %>%
+  arrange(relat, desc(k1), desc(k2)) %>%
+  group_by(relat) %>%
+  mutate(index = 1:n()) %>%
+  ungroup()
+
+ggplot(arranged_pairs, aes(x = index, y = k1)) +
+  geom_line(colour = "blue") +
+  geom_line(aes(y = k2), colour = "red") +
+  facet_wrap(~ relat, ncol = 1)
+```
+
+Some explanation of this is in order.  The x-axis in the index of pairs that are sorted descending on their $k_1$
+values (and secondarily on their $k_2$ values). So, each little position on the $x$-axis corresponds to a pair. The
+blue line is the $k_1$ value of the pair.  The red line is the $k_2$ value of the pair, and, of course, the $k_0$
+value is $1 - k_1 - k_2$.  We do see that the PO-1's (the parent offspring pairs) seem to have the largest fraction
+of total pairs that have high $k_1$ values, but it is a tiny few of them.  All the related groups have more high-$k_1$
+values than the unrelated pairs, but that is a tiny fraction of all the unrelated pairs---only about 0.25% of all of them.
+Also, note that AN-2 are full
+aunt-niece, Si-1 are half-siblings, Si-2 are full siblings, FC-2 are full first cousins, etc.  
+
+The really crazy feature here is that RelateAdmix is inferring $k_2==1$ for a huge block of pairs.  That is crazy!
+That should be reserved for monozygous twins.  My guess is that there is some numerical instability in the
+optimization or something.  But that is not our problem.  
+
+There are some full sibs that could be weeded out from the PO-1 pile be restricting to $k_2 < 0.15$, just by
+eyeball, so that will be our full-sibling removal procedure, but I don't think it is going to make any 
+difference because this is all so bad.  I expect it to perform worse than any other methods.
+
+So, the criterion for calling a pair a PO will be to order them all in terms of $k_1$ and just work
+down the taking them as they come.  But we will have a sibling removal strategy of tossing any pair
+that has $k_2 > 0.15$.  I need to code that up in the compute_rocs function.  
+

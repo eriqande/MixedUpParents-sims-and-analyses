@@ -33,6 +33,8 @@ if(exists("snakemake")) {
   relate_admix_locus_mask <- snakemake@output$relate_admix_locus_mask
   indsfile <- snakemake@output$indsfile
   output_k <- snakemake@output$output_k  # this is what relateAdmix spits out
+  binaryP <- snakemake@output$binaryP  # this is what relateAdmix uses from ADMIXTURE
+  binaryQ <- snakemake@output$binaryQ  # this is what relateAdmix uses from ADMIXTURE
   Rlog <- snakemake@log$Rlog
   admixture_log <- snakemake@log$admixture_log
   relateAdmix_log <- snakemake@log$relateAdmix_log
@@ -344,6 +346,12 @@ system(CALL3)
 # Now, we need to copy output.k to the correct location
 stopifnot(file.copy(from = file.path(tmpdir, basename(output_k)), to = output_k, overwrite = TRUE) == TRUE)
 
+# and we also need to copy the binaryP and binaryQ files that were used as input to
+# RelateAdmix (they were output from ADMIXTURE, but also the .P file had rows
+# removed if it is only_var).
+stopifnot(file.copy(from = file.path(tmpdir, basename(binaryP)), to = binaryP, overwrite = TRUE) == TRUE)
+stopifnot(file.copy(from = file.path(tmpdir, basename(binaryQ)), to = binaryQ, overwrite = TRUE) == TRUE)
+
 
 #### We also want to get some backstory on all the samples  ####
 # this stuff is analogous/identical to what gets done in mup_logls.R
@@ -496,4 +504,6 @@ trimmed_pairs <- all_pairs %>%
 
 
 # that is just what we need to make the ROC curves.  So, write it out.
-write_rds(trimmed_pairs, file = outrds, compress = "xz")
+# Though right now I am writing out all pairs because I am trying to
+# figure out what to use as a metric...
+write_rds(all_pairs, file = outrds, compress = "xz")

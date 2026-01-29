@@ -256,6 +256,8 @@ rule relate_admix:
     relate_admix_locus_mask="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/relate_admix_locus_mask.txt",
     indsfile="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/inds_file.tsv",
     output_k="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/output.k",
+    binaryP="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/binary.2.P",  # I am outputting these last two
+    binaryQ="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/binary.2.Q",  # just for verification that we have P and Q estimated well.  It is a check that everything is working.
   params:
     marker_set="{marker_set}"
   threads: 4

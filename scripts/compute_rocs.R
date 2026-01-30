@@ -17,7 +17,8 @@ if(exists("snakemake")) {
   inrds  <- snakemake@input$inrds
   outrds <- snakemake@output$outrds
 } else {
-  inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_all_pairs.rds"
+  #inrds  <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_all_pairs.rds"
+  inrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_only_var_all_pairs.rds"
   #inrds <- "results/scenario-nonWF_simple/ps1-1200-ps2-1200-mr1-0.06-mr2-0.02/rep-0/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/hot_only_var_all_pairs.rds"
   #inrds = "test/naive_logl_both_diag_and_var_all_pairs.rds"
   outrds = "test-compute-rocs.rds"
@@ -28,15 +29,16 @@ if(exists("snakemake")) {
 trimmed_pairs <- read_rds(inrds)
 
 Method <- "HOT"  # This is just the default.  We do other things when it is MUP or NAIVE_LOGL
-if("logl_ratio" %in% names(trimmed_pairs)) {
+if("relate_admix_metric" %in% names(trimmed_pairs)) {
+  Method <- "RELATE_ADMIX"
+} else if("logl_ratio" %in% names(trimmed_pairs)) {
   if("kIdx" %in% names(trimmed_pairs)) {
     Method <- "MUP"
   } else if("D2_indiv" %in% names(trimmed_pairs)) {
     Method <- "NAIVE_LOGL"
   } else {
-    stop("Was expecting it to be MUP or NAIVE_LOGL")
+    stop("Was expecting it to be MUP or NAIVE_LOGL or RELATE_ADMIX")
   }
-
 }
 
 # after filtering out different candidate parent sets, this will compute the ROC
@@ -73,8 +75,16 @@ make_roc_mup <- function(X, remove_likely_sibs = FALSE) {
         metric = logl_ratio,
         .before = D2_indiv
       )
+  } else if("relate_admix_metric" %in% names(X)) {
+    X2 <- X %>%
+      mutate(
+        method = "relate_admix",
+        metric = relate_admix_metric,
+        .before = indiv1
+      ) %>%
+      rename(kid_id = indiv1, par_id = indiv2)  # rename these columns to conform to the function
   } else {
-    stop("Didn't find hot_fract or logl_ratio amongst the names")
+    stop("Didn't find hot_fract or logl_ratio or relate_admix_metric amongst the names")
   }
 
   # this is the default approach not removing sibs
@@ -179,6 +189,21 @@ if(Method == "NAIVE_LOGL") {
     bind_rows(.id = "cohort_inclusion") %>%
     mutate(full_sib_treatment = "discarded_likely_FS", .after = cohort_inclusion)
 }
+
+if(Method == "RELATE_ADMIX") {
+  next_ret <- list(
+    exclude_same_cohort = trimmed_pairs %>%
+      filter(par_time > 0) %>%
+      mutate(sib_toss = k2 > 0.15) %>%
+      make_roc_mup(remove_likely_sibs = TRUE),
+    include_same_cohort = trimmed_pairs %>%
+      mutate(sib_toss = k2 > 0.15) %>%
+      make_roc_mup(remove_likely_sibs = TRUE)
+  ) %>%
+    bind_rows(.id = "cohort_inclusion") %>%
+    mutate(full_sib_treatment = "discarded_likely_FS", .after = cohort_inclusion)
+}
+
 
 ret <- bind_rows(first_ret, next_ret)
 

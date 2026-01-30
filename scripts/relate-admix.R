@@ -476,7 +476,7 @@ all_pairs <- ra_output2 %>%
     max_hit = replace_na(max_hit, 0L)
   ) %>%
   mutate(
-    coeff_relat = 0.5 * k1 + k2,
+    relate_admix_metric = k1,
     .after = indiv2
   )
 
@@ -489,16 +489,16 @@ all_pairs <- ra_output2 %>%
 # _from_each_cohort_ for each kid, and we will add in the information
 # about whether the parents were sampled
 trimmed_pairs <- all_pairs %>%
-  arrange(indiv1, par_time, desc(coeff_relat)) %>%
+  arrange(indiv1, par_time, desc(relate_admix_metric)) %>%
   group_by(indiv1, par_time) %>%
-  slice_sample(n = 10) %>%   # note here that, since there are so many with k2 == 1.0, that we just randomly sample 10 of them
+  slice(1:10) %>%   # take the top 10 from each possible level of parent time
   ungroup() %>%
   left_join(
     pars_in_samples,
     by = join_by(indiv1 == ped_id),
     relationship = "many-to-one"
   ) %>%
-  arrange(indiv1, desc(coeff_relat))
+  arrange(indiv1, desc(relate_admix_metric))
 
 
 
@@ -506,4 +506,4 @@ trimmed_pairs <- all_pairs %>%
 # that is just what we need to make the ROC curves.  So, write it out.
 # Though right now I am writing out all pairs because I am trying to
 # figure out what to use as a metric...
-write_rds(all_pairs, file = outrds, compress = "xz")
+write_rds(trimmed_pairs, file = outrds, compress = "xz")

@@ -1,5 +1,5 @@
 # These rules run pretty quickly, so we make them local rules
-localrules: gather_rocs
+#localrules: gather_rocs
 
 # this is a snakefile to orchestrate and run the simulations for the MUP paper.
 # We have designed simulations with data that look like trout populations.
@@ -319,5 +319,7 @@ rule gather_rocs:
     "results/benchmarks/gather_rocs/benchmark.bmk"
   conda:
     config["RENV"]
+  resources:
+    mem_mb=12000
   script:
     "scripts/gather_rocs.R"

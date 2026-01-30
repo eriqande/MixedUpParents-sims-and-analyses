@@ -260,9 +260,9 @@ rule relate_admix:
     binaryQ="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/relate_admix_{marker_set}_intermediate/binary.2.Q",  # just for verification that we have P and Q estimated well.  It is a check that everything is working.
   params:
     marker_set="{marker_set}"
-  threads: 4
+  threads: 8
   resources:
-    mem_mb=12800
+    mem_mb=25600
   log:
     Rlog="results/logs/relate_admix/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}_R.log",
     plink_log="results/logs/relate_admix/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}_plink.log",

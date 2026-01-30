@@ -149,9 +149,9 @@ config/black-lists/sequoia-short-run-timeouts.txt
 
 
 
-## Getting The RelateAdmix part going
+# Getting The RelateAdmix part going
 
-### Some important points here:
+## Some important points here:
 
 1. RelateAdmix has to be somewhere on the PATH.  It is not deployed via conda.
 2. One has to think about which marker sets get used for different parts of the analysis.
@@ -165,7 +165,7 @@ config/black-lists/sequoia-short-run-timeouts.txt
    working directory, which is really, really lame, and makes for a lot of BS overhead
    moving files around.
    
-### Some Verifications and Checking
+## Some Verifications and Checking
 
 I have things running on my laptop with previously simulated data and  I can
 run it like this:
@@ -297,7 +297,7 @@ chunks in a chunkyG framework.  I think that is going to work very well, at leas
 in cases that are not dominated by isolation by distance.
 
 
-### What metric should we use to rank pairs? 
+## What metric should we use to rank pairs? 
 
 I had originally thought I would use the coefficient of relatedness: $2k_1 + k_2$, but
 this is untenable because so many pairs have k2=1, which is just weird, right---that
@@ -372,4 +372,17 @@ difference because this is all so bad.  I expect it to perform worse than any ot
 So, the criterion for calling a pair a PO will be to order them all in terms of $k_1$ and just work
 down the taking them as they come.  But we will have a sibling removal strategy of tossing any pair
 that has $k_2 > 0.15$.  I need to code that up in the compute_rocs function.  
+
+
+## Running RelateAdmix on Alpine
+
+I have all the old SLiM outputs from the original big run that I did on SEDNA, and now
+I am going to just do the RelateAdmix parts on Alpine.  I should be able to do that without
+simulating anything again.  I am going to take care of all of that in a new branch called
+`relate-admix-on-alpine`.  The main changes will be:
+
+1. An Alpine profile.
+2. Running R in a conda environment that I already have set up
+3. Modifying the inputs to gather_rocs so that it only inludes the RelateAdmix stuff.
+
 

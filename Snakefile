@@ -92,7 +92,7 @@ if 'sequoia_full' not in config:
 
 
 rule all:
-  input: "results/summarized/all-rocs.rds"
+  input: "results/summarized/relate-admix-all-rocs.rds"
 
 # simulate a SLiM data set.  SLiM and R seeds are set according to output path name
 # currently assumes we are pulling samples from the last three generations (9-11)
@@ -117,8 +117,8 @@ rule slim_sim:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.bmk"
   conda:
     "/home/eanderson/mambaforge/envs/mixed-up-parents"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/slim_sim.R"
 
@@ -142,8 +142,8 @@ rule tweak2mup:
     log="results/logs/tweak2mup/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/tweak.R"
 
@@ -161,8 +161,8 @@ rule run_sequoia:
   params:
     which_markers="{seq_mark}",
     cohort_situation="{seq_cohort}"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   log:
     log="results/logs/run_sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{seq_cohort}-{seq_mark}.log"
   benchmark:
@@ -187,8 +187,8 @@ rule mup_logls:
     log="results/logs/mup_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.log"
   benchmark:
     "results/benchmarks/mup_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   conda:
     "envs/bedtools.yaml"
   script:
@@ -211,8 +211,8 @@ rule naive_logls:
     log="results/logs/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}.log"
   benchmark:
     "results/benchmarks/naive_logls/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/ckmrsim_logls.R"
 
@@ -233,8 +233,8 @@ rule hot_scores:
     log="results/logs/hot_scores/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{hot_markers}.log"
   benchmark:
     "results/benchmarks/hot_scores/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{hot_markers}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/hiphop_scores.R"
 
@@ -270,8 +270,8 @@ rule relate_admix:
     munge_call_log="results/logs/relate_admix/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}_munge_call.log",
   benchmark:
     "results/benchmarks/relate_admix/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{marker_set}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/relate-admix.R"
 
@@ -287,8 +287,8 @@ rule compute_rocs:
     log="results/logs/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}.log"
   benchmark:
     "results/benchmarks/compute_rocs/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{what}.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/compute_rocs.R"
 
@@ -300,20 +300,22 @@ rule compute_rocs:
 rule gather_rocs:
   input:
     inList=[
-      expand_paths_general(what = "mup_rocs.rds"),
-      expand_paths_general(what = "naive_logl_both_diag_and_var_rocs.rds"),
-      expand_paths_general(what = "naive_logl_only_var_rocs.rds"),
-      expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
-      expand_paths_general(what = "hot_only_var_rocs.rds"),
-      SEQUOIA_AGG 
+      #expand_paths_general(what = "mup_rocs.rds"),
+      #expand_paths_general(what = "naive_logl_both_diag_and_var_rocs.rds"),
+      #expand_paths_general(what = "naive_logl_only_var_rocs.rds"),
+      #expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
+      #expand_paths_general(what = "hot_only_var_rocs.rds"),
+      #SEQUOIA_AGG 
+      expand_paths_general(what = "relate_admix_both_diag_and_var_rocs.rds"),
+      expand_paths_general(what = "relate_admix_only_var_rocs.rds")
     ]
   output: 
-    outrds="results/summarized/all-rocs.rds"
+    outrds="results/summarized/relate-admix-all-rocs.rds"
   log:
     log="results/logs/gather_rocs/log.log"
   benchmark:
     "results/benchmarks/gather_rocs/benchmark.bmk"
-  envmodules:
-    "R/4.0.3"
+  conda:
+    config["RENV"]
   script:
     "scripts/gather_rocs.R"

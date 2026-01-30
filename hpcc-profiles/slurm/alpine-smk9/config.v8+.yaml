@@ -1,0 +1,40 @@
+
+executor: cluster-generic
+cluster-generic-submit-cmd:
+  mkdir -p results/slurm_logs/{rule} &&
+  sbatch
+    --partition=amilan,csu
+    --cpus-per-task={threads}
+    --mem={resources.mem_mb}
+    --qos=normal
+    --time={resources.time}
+    --job-name=smk-{rule}-{wildcards}
+    --output=results/slurm_logs/{rule}/{rule}-{wildcards}-%j.out
+    --error=results/slurm_logs/{rule}/{rule}-{wildcards}-%j.err
+    --parsable
+cluster-generic-status-cmd: status-sacct-robust.sh
+cluster-generic-cancel-cmd: scancel
+cluster-generic-cancel-nargs: 400
+default-resources:
+  - time="4:00:00"
+  - mem_mb=3200
+  - tmpdir="/tmp"
+restart-times: 0
+max-jobs-per-second: 10
+max-status-checks-per-second: 10
+local-cores: 1
+latency-wait: 60
+cores: 2400
+jobs: 950
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+use-conda: True
+rerun-triggers: mtime
+
+
+# this one sets the RENV variable in the config appropriately.
+config:
+  RENV: '/projects/eriq@colostate.edu/miniforge3/envs/r-4.5.2-chunky'
+
+

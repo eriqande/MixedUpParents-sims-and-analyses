@@ -27,20 +27,91 @@ We can do that by nesting stuff up.
 library(tidyverse)
 dir.create("outputs/004", recursive = TRUE, showWarnings = FALSE)
 
-BR <- read_rds("stored-results/BIG-RUN-all-rocs.rds")
+#BR <- read_rds("stored-results/BIG-RUN-all-rocs.rds")
+RA <- read_rds("stored-results/relate-admix-all-rocs.rds") %>%
+  select(
+    mig_rate1,
+    mig_rate2,
+    samp_ppn,
+    method,
+    full_sib_treatment,
+    var_miss_rate,
+    remainder,
+    fpr,
+    tpr,
+    rep,
+    scenario,
+    cohort_inclusion
+  )
 
-nesto <- BR %>%
+
+  
+BR <- read_rds("stored-results/BIG-RUNS-add-ckmsim-all-rocs-2025-02-19.rds") %>%
+  select(
+    mig_rate1,
+    mig_rate2,
+    samp_ppn,
+    method,
+    full_sib_treatment,
+    var_miss_rate,
+    remainder,
+    fpr,
+    tpr,
+    rep,
+    scenario,
+    cohort_inclusion
+  )
+  
+
+nesto <- bind_rows(BR, RA) %>%
   group_by(mig_rate1, mig_rate2, samp_ppn) %>%
   nest()
 
 rm(BR)
+rm(RA)
 ```
 
 
 Now, each one of these nested ones we should be able to plot in a consistent way
 on a separate page.  Here is a function to do that:
 ```{r}
-roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004") {
+# first, we make a tibble we can eventually join on there to do the colors and things the way we want to
+categ_tib <- tribble(
+  ~approach                    , ~Method_and_Markers,  ~Full_Sibling_Treatment  ,
+  "HOT (v only)"               ,  "HOT (V)"         , "None"                 ,
+  "HOT (v+d)"                  ,  "HOT (V+D)"       , "None"                 ,
+  "MUP (no FS calc)"           ,  "MUP"             , "None"                 ,
+  "MUP (w/FS calc)"            ,  "MUP"             , "Likely FS Removed"    ,
+  "Naive (v only, no FS calc)" ,  "Naive (V)"       , "None"                 ,
+  "Naive (v only, w/FS calc)"  ,  "Naive (V)"       , "Likely FS Removed"    ,
+  "Naive (v+d, no FS calc)"    ,  "Naive (V+D)"     , "None"                 ,
+  "Naive (v+d, wFS calc)"      ,  "Naive (V+D)"     , "Likely FS Removed"    ,
+  "RA (v only, no FS calc)"    ,  "RA (V)"          , "None"                 ,
+  "RA (v only, w/FS calc)"     ,  "RA (V)"          , "Likely FS Removed"    ,
+  "RA (v+d, no FS calc)"       ,  "RA (V+D)"        , "None"                 ,
+  "RA (v+d, wFS calc)"         ,  "RA (V+D)"        , "Likely FS Removed"    ,
+  "Sequoia (v only)"           ,  "Sequoia (V)"     , "None"
+)
+
+# and then we can define colors for the these, pairing dark and light ones
+# for the same methods with V+D or just V
+meth_mark_colors <- c(
+  `HOT (V+D)`   = "red",
+  `HOT (V)`     = "pink",
+  `MUP`         = "purple",
+  `Naive (V+D)` = "blue",
+  `Naive (V)`   = "skyblue",
+  `RA (V+D)`    = "black",
+  `RA (V)`      = "gray50",
+  `Sequoia (V)` = "orange"
+)
+
+fs_line_types <- c(
+  None = "solid",
+  `Likely FS Removed` = "dashed"
+)
+
+roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet = "miss_rate") {
 
   x2 <- x %>%
     mutate(
@@ -50,27 +121,49 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004") {
     ) %>%
     mutate(
       approach = case_when(
-        method == "sequoia" ~ "Sequoia (variable only)",
-        remainder == "hot_both_diag_and_var_rocs.rds" ~ "HOT (diagnostic + variable)",
-        remainder == "hot_only_var_rocs.rds" ~ "HOT (variable only)",
-        method == "mup" & full_sib_treatment == "discarded_likely_FS" ~ "MixedUpParents (w/FS-calc)",
-        method == "mup" & full_sib_treatment == "none" ~ "MixedUpParents (no FS-calc)",
+        method == "sequoia" ~ "Sequoia (v only)",
+        remainder == "hot_both_diag_and_var_rocs.rds" ~ "HOT (v+d)",
+        remainder == "hot_only_var_rocs.rds" ~ "HOT (v only)",
+        method == "mup" & full_sib_treatment == "discarded_likely_FS" ~ "MUP (w/FS calc)",
+        method == "mup" & full_sib_treatment == "none" ~ "MUP (no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "none" & remainder == "naive_logl_both_diag_and_var_rocs.rds" ~ "Naive (v+d, no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "none" & remainder == "naive_logl_only_var_rocs.rds" ~ "Naive (v only, no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "discarded_likely_FS" & remainder == "naive_logl_both_diag_and_var_rocs.rds" ~ "Naive (v+d, wFS calc)",
+        method == "naive_logl" & full_sib_treatment == "discarded_likely_FS" & remainder == "naive_logl_only_var_rocs.rds" ~ "Naive (v only, w/FS calc)",
+        method == "relate_admix" & full_sib_treatment == "none" & remainder == "relate_admix_both_diag_and_var_rocs.rds" ~ "RA (v+d, no FS calc)",
+        method == "relate_admix" & full_sib_treatment == "none" & remainder == "relate_admix_only_var_rocs.rds" ~ "RA (v only, no FS calc)",
+        method == "relate_admix" & full_sib_treatment == "discarded_likely_FS" & remainder == "relate_admix_both_diag_and_var_rocs.rds" ~ "RA (v+d, wFS calc)",
+        method == "relate_admix" & full_sib_treatment == "discarded_likely_FS" & remainder == "relate_admix_only_var_rocs.rds" ~ "RA (v only, w/FS calc)",
         TRUE ~ NA_character_
       )
-    )
+    ) %>%
+    left_join(categ_tib, by = join_by(approach))
   
   
   g <- x2 %>%
-    ggplot(aes(x = fpr, y = tpr, colour = approach, group = interaction(approach, rep))) +
-    facet_grid(miss_rate ~ scenario + cohort_inclusion) +
+    ggplot(aes(x = fpr, y = tpr, colour = Method_and_Markers, linetype = Full_Sibling_Treatment,  group = interaction(approach, rep))) +
     geom_line() +
-    scale_colour_brewer(type = "qual", palette = "Set1") +
+    #scale_colour_brewer(type = "qual", palette = "Set1") +
+    scale_colour_manual(values = meth_mark_colors) +
+    scale_linetype_manual(values = fs_line_types) +
+    theme_bw() +
     ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
   
+  
+  # now deal with how we facet it
+  if(row_facet == "miss_rate") {
+    g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion)
+  } else if(row_facet ==  "mig_rate") {
+    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion)
+  } else if(row_facet == "samp_ppn") {
+    g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion)
+  } else{
+    stop("Unrecognized row_facet, ", row_facet)
+  }
   outpath <- str_c(outfolder, "/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
   
   ggsave(
-    g, 
+    g2, 
     filename = outpath, 
     width = 15, height = 15
   )
@@ -79,6 +172,8 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004") {
   
 }
 ```
+
+
 And now, we can use it like this:
 ```{r}
 BOING <- nesto %>% 
@@ -92,5 +187,52 @@ BOING <- nesto %>%
 ```
 
 
-That is cool.  Now, let's crunch out the small-pop (120) runs.
+## Making some specialized plots
 
+### Facetting mig_rate at miss_rate == 0.25 and samp_ppn = 0.5
+```{r}
+tmp <- nesto %>%
+  filter(samp_ppn == 0.5) %>%
+  unnest(cols = data) %>%
+  filter(var_miss_rate == 0.25)
+
+roc_page("variable. Miss-rate = 0.25", "0.5", tmp, row_facet = "mig_rate")
+```
+
+
+### Facetting samp_ppn at mig_rate == 0.02 and miss_rate == 0.25
+```{r}
+tmp2 <- nesto %>%
+  filter(mig_rate1 == 0.02) %>%
+  unnest(cols = data) %>%
+  filter(var_miss_rate == 0.25)
+
+roc_page("0.02",  "variable, Miss-rate = 0.25", tmp2, row_facet = "samp_ppn")
+```
+
+
+
+## Playing with Color-blind safe schemes
+
+```{r}
+library(colorspace)
+library(colorblindr)
+palette = c(
+    "#000000", "#999999",  # Black/Gray
+    "#0072B2", "#56B4E9",  # Blue/Sky Blue
+    "#D55E00", "#E69F00",  # Vermilion/Orange
+    "#332288", "#CC79A7",  # Indigo/Rose
+    "#004D40", "#009E73"   # Dark Teal/Bluish Green
+)
+
+points_plot <- tibble(x = 1:10, y = 1:10) %>%
+  ggplot(aes(x = x, y = y, colour = factor(x))) +
+  geom_point(size = 10) +
+  scale_colour_manual(values = palette)
+
+points_plot
+```
+
+```{r}
+cvd_grid(points_plot)
+```

@@ -440,3 +440,64 @@ to take care of all of that in a new branch called
 2.  Running R in a conda environment that I already have set up
 3.  Modifying the inputs to gather_rocs so that it only inludes the
     RelateAdmix stuff.
+
+I am testing the dry-run of that in the branch like this:
+
+``` sh
+snakemake -np --rerun-triggers mtime --profile hpcc-profiles/slurm/alpine-smk9
+```
+
+Before I untarred the old results, this is what it would have to do:
+
+    Shell command: None
+    Job stats:
+    job             count
+    ------------  -------
+    all                 1
+    compute_rocs     1280
+    gather_rocs         1
+    relate_admix     1280
+    slim_sim           40
+    tweak2mup         640
+    total            3242
+
+But after I untarred the old results (that has all the simulation
+results, etc).
+
+It still wants to regenerate some things because the file modification
+times for the inputs to SLiM that I got from GitHub are today because I
+just cloned it. So, I need to set those file mod times to before Jan 20,
+2025. Let’ try:
+
+``` sh
+touch -t 202501010000 config/slim_templates/*.slim config/var_freqs/cyclone-var-freqs.rds config/diag_markers/wct-rbt-yct-spp-diag-markers.rds
+```
+
+That seems to have done it. Now, when I do, for one file:
+
+``` sh
+snakemake -np --use-conda results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.1-mr2-0.1/rep-4/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.15-dmiss-0.15/relate_admix_both_diag_and_var_rocs.rds  --rerun-triggers mtime --profile hpcc-profiles/slurm/alpine-smk9
+```
+
+I get this:
+
+``` sh
+Shell command: None
+Job stats:
+job             count
+------------  -------
+compute_rocs        1
+relate_admix        1
+total               2
+```
+
+So, now I just need to:
+
+1.  compile relateAdmix and link it to bin.
+2.  download admixture an link it to bin
+3.  installed plink 1.9 into a conda environment with
+    `conda create -n plink bioconda::plink`, and then I symlinked plink
+    in bin to the binary in that conda env
+
+It all ran great, except about 120 of the jobs ran out of memory, so I
+upped those to 8 cores and 25800 Mb.

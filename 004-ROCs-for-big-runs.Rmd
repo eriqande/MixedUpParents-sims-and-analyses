@@ -82,10 +82,10 @@ categ_tib <- tribble(
   "HOT (v+d)"                  ,  "HOT (V+D)"       , "None"                 ,
   "MUP (no FS calc)"           ,  "MUP (V+D)"             , "None"                 ,
   "MUP (w/FS calc)"            ,  "MUP (V+D)"             , "Likely FS Removed"    ,
-  "Naive (v only, no FS calc)" ,  "Naive (V)"       , "None"                 ,
-  "Naive (v only, w/FS calc)"  ,  "Naive (V)"       , "Likely FS Removed"    ,
-  "Naive (v+d, no FS calc)"    ,  "Naive (V+D)"     , "None"                 ,
-  "Naive (v+d, wFS calc)"      ,  "Naive (V+D)"     , "Likely FS Removed"    ,
+  "Naive (v only, no FS calc)" ,  "Naive LR (V)"       , "None"                 ,
+  "Naive (v only, w/FS calc)"  ,  "Naive LR (V)"       , "Likely FS Removed"    ,
+  "Naive (v+d, no FS calc)"    ,  "Naive LR (V+D)"     , "None"                 ,
+  "Naive (v+d, wFS calc)"      ,  "Naive LR (V+D)"     , "Likely FS Removed"    ,
   "RA (v only, no FS calc)"    ,  "RA (V)"          , "None"                 ,
   "RA (v only, w/FS calc)"     ,  "RA (V)"          , "Likely FS Removed"    ,
   "RA (v+d, no FS calc)"       ,  "RA (V+D)"        , "None"                 ,
@@ -99,8 +99,8 @@ meth_mark_colors <- c(
   `HOT (V+D)`   = "red",
   `HOT (V)`     = "pink",
   `MUP (V+D)`   = "purple",
-  `Naive (V+D)` = "blue",
-  `Naive (V)`   = "skyblue",
+  `Naive LR (V+D)` = "blue",
+  `Naive LR (V)`   = "skyblue",
   `RA (V+D)`    = "black",
   `RA (V)`      = "gray50",
   `Sequoia (V)` = "orange"
@@ -108,7 +108,7 @@ meth_mark_colors <- c(
 
 fs_line_types <- c(
   None = "solid",
-  `Likely FS Removed` = "dashed"
+  `Likely FS Removed` = "dotted"
 )
 
 roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet = "miss_rate") {
@@ -137,6 +137,18 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
         TRUE ~ NA_character_
       )
     ) %>%
+    mutate(
+      cohort_inclusion = case_match(
+        cohort_inclusion,
+        "exclude_same_cohort" ~ "Exclude Same Cohort",
+        "include_same_cohort" ~ "Include Same Cohort"
+      ),
+      scenario = case_match(
+        scenario,
+        "cyclone_WF" ~ "Wright-Fisher",
+        "cyclone_nonWF" ~ "non-WF"
+      )
+    ) %>%
     left_join(categ_tib, by = join_by(approach))
   
   
@@ -146,9 +158,15 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
     #scale_colour_brewer(type = "qual", palette = "Set1") +
     scale_colour_manual(values = meth_mark_colors) +
     scale_linetype_manual(values = fs_line_types) +
+    scale_x_continuous(
+      breaks = c(0, 0.25, 0.5, 0.75, 1),
+      labels = c("0", "0.25", "0.5", "0.75", "1")
+    ) +
     theme_bw() +
-    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
-  
+    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fraction: ", samp_ppn)) +
+    xlab("Fraction of Parentage Assignments That Are Correct") +
+    ylab("Fraction of Parentage Assignments that are Incorrect")
+   
   
   # now deal with how we facet it
   if(row_facet == "miss_rate") {
@@ -165,7 +183,7 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
   ggsave(
     g2, 
     filename = outpath, 
-    width = 15, height = 15
+    width = 10, height = 8
   )
   
   outpath
@@ -196,7 +214,7 @@ tmp <- nesto %>%
   unnest(cols = data) %>%
   filter(var_miss_rate == 0.25)
 
-roc_page("variable. Miss-rate = 0.25", "0.5", tmp, row_facet = "mig_rate")
+roc_page("variable.  Fraction of Markers Randomly Missing = 0.25.", "0.5.", tmp, row_facet = "mig_rate")
 ```
 
 
@@ -207,7 +225,7 @@ tmp2 <- nesto %>%
   unnest(cols = data) %>%
   filter(var_miss_rate == 0.25)
 
-roc_page("0.02",  "variable, Miss-rate = 0.25", tmp2, row_facet = "samp_ppn")
+roc_page("0.02",  "variable.  Fraction of Markers Randomly Missing = 0.25.", tmp2, row_facet = "samp_ppn")
 ```
 
 

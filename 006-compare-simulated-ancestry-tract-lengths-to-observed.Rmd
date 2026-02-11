@@ -1,0 +1,107 @@
+---
+title: "Comparing Lengths of Ancestry Tracts Between Simulated and Empirical"
+output: html_notebook
+---
+
+I hope this will be a quickie.  We chose a fairly low recombination rate of 1e-9 
+in our SLiM simulations because, by eye, that gave us the closest thing to the
+lengths and patterns of ancestry blocks that we observed in the Cyclone Creek data.
+
+I suspect that there are fewer generations of admixture (that have survived) in
+Cyclone, than 11 generations, which is why we needed to crank down the recombination
+rate.  Or, maybe recombination rate is lower in mixed ancestry fish.  
+
+At any rate, I just want to compare the distribution of the lengths of different
+ancestry blocks between Cyclone and the simulations.  I suspect that we will have
+to condition on the number of different ancestries in each chromosome, and especially
+omitting the chromosomes with a single ancestry on them.  
+
+The inputs that I am going to use for this are:
+
+1. The extended ancestral segments object from Cyclone.  This was calculated in
+`MixedUpParents/development/running-cyclone.Rmd` and has been saved here in
+`misc/cyclone-extended-segs.rds`.
+2. The extended ancestral segments object from the first simulated rep at a missing
+data rate of 0.15 from the simulations.  I grabbed this off of SEDNA from
+`results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.05-mr2-0.05/rep-1/ppn-1.0-verr-0.01-derr-0.004-vmiss-0.15-dmiss-0.15/tweaked2mup.rds` and I put it at `misc/tweaked2mup-for-ancestry-tract-comparisons.rds`.
+
+So, let's get into it.  Read the data in:
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(MixedUpParents)
+
+obsE <- read_rds("misc/cyclone-extended-segs.rds")
+
+simmed4mup <- read_rds("misc/tweaked2mup-for-ancestry-tract-comparisons.rds")
+```
+
+
+Then infer the extended segments for the simulated data:
+```{r}
+AS_sim <- ancestral_n_segments(
+  D = simmed4mup$spp_diag_snps,
+  chrom_levels = unique(simmed4mup$spp_diag_snps$chrom)
+)
+
+
+
+# get the ancestral segments using bedtools
+simE <- extend_ancestral_segments_using_bedtools(
+  AS_sim,
+  species_levels = c(simmed4mup$spp_names, "YCT")
+)
+
+
+dir.create("outputs/006", recursive = TRUE, showWarnings = FALSE)
+
+# save that for easy use later
+write_rds(simE, file = "outputs/006/simE.rds", compress = "xz")
+```
+
+
+Now, let us do a quick and dirty look at these things.
+
+First, let us just count the number of chromosomes with different numbers of segments on there.
+```{r}
+long_segs <- seggy <- list(
+  simE = simE,
+  obsE = obsE
+) %>%
+  bind_rows(.id = "type")
+
+long_segs %>%
+  count(type, indiv, chrom_f, name = "num_segs_on_chrom") %>%
+  count(type, num_segs_on_chrom, name = "num_chroms") %>%
+  group_by(type) %>%
+  mutate(fract_chroms = num_chroms / sum(num_chroms)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = type, values_from = c(num_chroms, fract_chroms))
+```
+
+That pretty much says it right there.  The recombination rate could have been a little bit
+higher, but we get it pretty close.  The actual numbers one sees will depend on the migration
+rate as well.  So, I think that we have done pretty well here and it should be easy to
+explain why we used the recombination rate that we did.  I think we could crank the migration rate
+up and probably see that we have things even closer.  So, I should also pull that
+out for migration rate of 0.10.  
+
+
+The rest of this down below is less relevant.  I was looking at the distribution of the
+segment lengths, but that is actually less informative, since it is essentially a Poisson
+process, and so when you condition on the number of segs on the chromosome, you end
+up getting things that look very similar.
+```{r}
+long_segs %>%
+  group_by(type, indiv, chrom_f) %>%
+  mutate(num_segs = n()) %>%
+  filter(num_segs > 1) %>%  # remove chromosomes with no apparent recombinations
+  ungroup() %>%
+  mutate(seg_length = stop - start)
+```
+
+Then give this a quick plot:
+```{r}
+ggplot(seggy, aes(x = seg_length, fill = type)) +
+  geom_histogram(alpha = 0.3) +
+  facet_wrap(~ num_segs)
+```

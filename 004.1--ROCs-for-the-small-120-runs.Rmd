@@ -1,0 +1,145 @@
+---
+title: "Making ROCs for the smaller run (pop sizes of 120)"
+output: html_notebook
+---
+
+
+
+## Small pop runs
+
+```{r}
+library(tidyverse)
+
+dir.create("outputs/004/SmallRun-120", recursive = TRUE, showWarnings = FALSE)
+
+SR <- read_rds("stored-results/Small-120-runs-all-rocs.rds")
+
+nestoSR <- SR %>%
+  filter(!is.na(tpr) & !is.na(fpr)) %>%  # gotta get rid of the pairs that Sequoia does not report
+  group_by(mig_rate1, mig_rate2, samp_ppn) %>%
+  nest()
+
+rm(SR)
+```
+
+Now, these runs all had a sampling fraction of 50%.  And two different levels of missing
+data.  Let's see what we have going on here:
+
+
+```{r}
+# first, we make a tibble we can eventually join on there to do the colors and things the way we want to
+categ_tib <- tribble(
+  ~approach                    , ~Method_and_Markers,  ~Full_Sibling_Treatment  ,
+  "HOT (v only)"               ,  "HOT (V)"         , "None"                 ,
+  "HOT (v+d)"                  ,  "HOT (V+D)"       , "None"                 ,
+  "MUP (no FS calc)"           ,  "MUP (V+D)"             , "None"                 ,
+  "MUP (w/FS calc)"            ,  "MUP (V+D)"             , "Likely FS Removed"    ,
+  "Naive (v only, no FS calc)" ,  "Naive (V)"       , "None"                 ,
+  "Naive (v only, w/FS calc)"  ,  "Naive (V)"       , "Likely FS Removed"    ,
+  "Naive (v+d, no FS calc)"    ,  "Naive (V+D)"     , "None"                 ,
+  "Naive (v+d, wFS calc)"      ,  "Naive (V+D)"     , "Likely FS Removed"    ,
+  "RA (v only, no FS calc)"    ,  "RA (V)"          , "None"                 ,
+  "RA (v only, w/FS calc)"     ,  "RA (V)"          , "Likely FS Removed"    ,
+  "RA (v+d, no FS calc)"       ,  "RA (V+D)"        , "None"                 ,
+  "RA (v+d, wFS calc)"         ,  "RA (V+D)"        , "Likely FS Removed"    ,
+  "Sequoia (v only)"           ,  "Sequoia (V)"     , "None",
+  "Sequoia (v+d)"              ,  "Sequoia (V+D)"   , "None"
+)
+
+# and then we can define colors for the these, pairing dark and light ones
+# for the same methods with V+D or just V
+meth_mark_colors <- c(
+  `HOT (V+D)`   = "red",
+  `HOT (V)`     = "pink",
+  `MUP (V+D)`   = "purple",
+  `Naive (V+D)` = "blue",
+  `Naive (V)`   = "skyblue",
+  `RA (V+D)`    = "black",
+  `RA (V)`      = "gray50",
+  `Sequoia (V)` = "orange",
+  `Sequoia (V+D)` = "brown"
+)
+
+fs_line_types <- c(
+  None = "solid",
+  `Likely FS Removed` = "dashed"
+)
+
+roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet = "miss_rate") {
+
+  x2 <- x %>%
+    mutate(
+      method = replace_na(method, "sequoia"),
+      full_sib_treatment = replace_na(full_sib_treatment, "none"),
+      miss_rate = var_miss_rate
+    ) %>%
+    mutate(
+      approach = case_when(
+        method == "sequoia" & str_detect(remainder, "both_diag_and_var") ~ "Sequoia (v+d)",
+        method == "sequoia" & str_detect(remainder, "only_var") ~ "Sequoia (v only)",
+        remainder == "hot_both_diag_and_var_rocs.rds" ~ "HOT (v+d)",
+        remainder == "hot_only_var_rocs.rds" ~ "HOT (v only)",
+        method == "mup" & full_sib_treatment == "discarded_likely_FS" ~ "MUP (w/FS calc)",
+        method == "mup" & full_sib_treatment == "none" ~ "MUP (no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "none" & remainder == "naive_logl_both_diag_and_var_rocs.rds" ~ "Naive (v+d, no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "none" & remainder == "naive_logl_only_var_rocs.rds" ~ "Naive (v only, no FS calc)",
+        method == "naive_logl" & full_sib_treatment == "discarded_likely_FS" & remainder == "naive_logl_both_diag_and_var_rocs.rds" ~ "Naive (v+d, wFS calc)",
+        method == "naive_logl" & full_sib_treatment == "discarded_likely_FS" & remainder == "naive_logl_only_var_rocs.rds" ~ "Naive (v only, w/FS calc)",
+        method == "relate_admix" & full_sib_treatment == "none" & remainder == "relate_admix_both_diag_and_var_rocs.rds" ~ "RA (v+d, no FS calc)",
+        method == "relate_admix" & full_sib_treatment == "none" & remainder == "relate_admix_only_var_rocs.rds" ~ "RA (v only, no FS calc)",
+        method == "relate_admix" & full_sib_treatment == "discarded_likely_FS" & remainder == "relate_admix_both_diag_and_var_rocs.rds" ~ "RA (v+d, wFS calc)",
+        method == "relate_admix" & full_sib_treatment == "discarded_likely_FS" & remainder == "relate_admix_only_var_rocs.rds" ~ "RA (v only, w/FS calc)",
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    left_join(categ_tib, by = join_by(approach)) %>%
+    arrange(Method_and_Markers, Full_Sibling_Treatment, approach, fpr, tpr)
+  
+  
+  g <- x2 %>%
+    ggplot(aes(x = fpr, y = tpr, colour = Method_and_Markers, linetype = Full_Sibling_Treatment,  group = interaction(approach, rep, scenario, cohort_inclusion))) +
+    geom_line() +
+    #scale_colour_brewer(type = "qual", palette = "Set1") +
+    scale_colour_manual(values = meth_mark_colors) +
+    scale_linetype_manual(values = fs_line_types) +
+    theme_bw() +
+    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
+  
+  
+  # now deal with how we facet it
+  if(row_facet == "miss_rate") {
+    g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion)
+  } else if(row_facet ==  "mig_rate") {
+    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion)
+  } else if(row_facet == "samp_ppn") {
+    g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion)
+  } else{
+    stop("Unrecognized row_facet, ", row_facet)
+  }
+  outpath <- str_c(outfolder, "/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
+  
+  ggsave(
+    g2, 
+    filename = outpath, 
+    width = 15, height = 9
+  )
+  
+  outpath
+  
+}
+```
+
+
+
+
+```{r}
+
+BOING <- nestoSR %>% 
+  mutate(
+    plot = pmap_chr(
+      .l = list(mig_rate = mig_rate1, samp_ppn = samp_ppn, x = data, outfolder = "outputs/004/SmallRun-120"),
+      .f = roc_page,
+      .progress = TRUE
+    )
+  )
+```

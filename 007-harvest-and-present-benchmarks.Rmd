@@ -1,0 +1,174 @@
+---
+title: "Get the Benchmarks and Present Them"
+output: html_notebook
+---
+
+First, I simply need to harvest all the benchmark files and put them in a single file
+with the path.  We will do that on Unix:
+
+```sh
+(base) login-ci4 MixedUpParents-sims-and-analyses (relate-admix-on-alpine)--% pwd
+/home/eriq@colostate.edu/scratch/PROJECTS/MixedUpParents-sims-and-analyses
+
+(base) login-ci4 MixedUpParents-sims-and-analyses (relate-admix-on-alpine)--% tree -d -L 1 results/benchmarks/
+results/benchmarks/
+├── compute_rocs
+├── gather_rocs
+├── hot_scores
+├── mup_logls
+├── naive_logls
+├── relate_admix
+├── run_sequoia
+└── slim_sim
+
+```
+
+So, I am going to want to get everything from:
+`{hot_scores,mup_logls,naive_logls,relate_admix,run_sequoia}`
+
+That is going to be a little over 5000 files:
+```
+tree results/benchmarks/{hot_scores,mup_logls,naive_logls,relate_admix,run_sequoia}/*| grep bmk | wc
+   5486   23549  303752
+   
+#Yep:
+
+(base) login-ci4 MixedUpParents-sims-and-analyses (relate-admix-on-alpine)--% find  results/benchmarks/{hot_scores,mup_logls,naive_logls,relate_admix,run_sequoia}/*  -name "*.bmk" | wc
+   5486    5486  887969
+```
+So, we will get all this with gawk because that keeps track of the current file name.
+
+```sh
+# note: here is the header:
+# s	h:m:s	max_rss	max_vms	max_uss	max_pss	io_in	io_out	mean_load	cpu_time
+
+FILES=$(find  results/benchmarks/{hot_scores,mup_logls,naive_logls,relate_admix,run_sequoia}/*  -name "*.bmk")
+
+gawk 'BEGIN {OFS="\t"} !/max_rss/ {print FILENAME, $0}' $FILES > All_Benchmarks.tsv
+gzip All_Benchmarks.tsv
+mv All_Benchmarks.tsv.gz stored-results/
+```
+Then I committed that.
+
+OK, that was super easy.  Now, we just need to read that stuff in and process it.
+```{r}
+library(tidyverse)
+
+bmk <- read_tsv(
+  "stored-results/All_Benchmarks.tsv.gz",
+  col_names = c(
+    "path",
+    "wall_time_seconds",  #s
+    "h_m_s", #h:m:s
+    "max_rss",
+    "max_vms",
+    "max_uss",
+    "max_pss",
+    "io_in",
+    "io_out",
+    "mean_load",
+    "cpu_time"
+    ), 
+  col_types = cols(h_m_s = col_character()) 
+  ) %>%
+  filter(str_detect(path, "cyclone")) %>% # only keep the real ones---they have cyclone in the scenario name
+  extract(
+    path, 
+    into = c("method", "scenario", "middle", "marker_set"),
+    regex = "^results/benchmarks/(.*)/(scenario-.*WF)/(.*)/([^/]+var|.*).bmk",
+    convert = FALSE,
+    remove = FALSE
+  ) %>%    # this is a little messed up because the MUP ones don't list the markers used
+ mutate(
+   middle = case_when(
+     method == "mup_logls" ~ paste(middle, marker_set, sep = "/"),
+     TRUE ~ method
+   ),
+   marker_set = case_when(
+     method == "mup_logls" ~ "both_diag_and_var",
+     TRUE ~ marker_set 
+   )
+ )
+```
+
+That has gotten it pretty well.  Let's look at what we got:
+```{r}
+bmk %>% count(method, scenario, marker_set)
+```
+
+
+So, first off, let us break out the small scenario from the others.
+```{r}
+smalls <- bmk %>% filter(str_detect(scenario, "small"))
+
+smalls %>% count(method, scenario, marker_set)
+```
+
+And let's get the non_smalls too:
+```{r}
+non_smalls <- bmk %>% filter(!str_detect(scenario, "small"))
+
+non_smalls %>% count(method, scenario, marker_set)
+```
+
+Let's also see how many total that is:
+```{r}
+
+```
+
+Now we can just make some histograms to have an overview:
+```{r}
+ggplot(non_smalls, aes(x = cpu_time / 60, fill = method)) +
+  geom_histogram() +
+  facet_wrap(~ method, ncol = 1, scales = "free")
+```
+
+```{r}
+ggplot(non_smalls, aes(x = cpu_time / 60, y = mean_load, fill = method)) +
+  geom_point() +
+  facet_wrap(~ method, ncol = 1, scales = "free")
+```
+
+Maybe we want boxplots
+```{r}
+# first get these in a long format ready to plot
+ns_long <- non_smalls %>%
+  rename(
+    `Wall Time` = wall_time_seconds,
+    `CPU Time` = cpu_time,
+  ) %>%
+  pivot_longer(cols = c(`Wall Time`, `CPU Time`), values_to = "seconds", names_to = "time_type") %>%
+  mutate(Minutes = seconds / 60)
+
+# now, let's sort them in terms of median cpu_time
+med_times <- ns_long %>%
+  filter(time_type == "CPU Time") %>%
+  group_by(method) %>%
+  summarise(
+    median = median(Minutes)
+  ) %>%
+  arrange(median)
+
+# sort the methods to have the right order
+meth_levs <- rev(med_times$method)
+
+ns_long2 <- ns_long %>%
+  mutate(Method = factor(method, levels = meth_levs))
+
+ggplot(ns_long2, aes(x = Method, y = Minutes)) +
+  geom_boxplot() +
+  scale_y_continuous(
+    transform = "log10",
+    minor_breaks = c(1:10, seq(20, 100, by = 10), seq(200, 1000, by = 100), 2000),
+    breaks = c(1, 2, 5, 10, 20, 50, 100, 500, 2000)
+  ) +
+  facet_wrap(~ time_type, ncol = 1) +
+  coord_flip() +
+  theme_bw()
+```
+
+And let us save that as a PDF
+```{r}
+dir.create("outputs/007", recursive = TRUE, showWarnings = FALSE)
+ggsave(filename = "outputs/007/run-time-boxplots.pdf", width = 4, height = 4)
+```

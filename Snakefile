@@ -302,17 +302,17 @@ rule compute_rocs:
 rule gather_rocs:
   input:
     inList=[
-      #expand_paths_general(what = "mup_rocs.rds"),
+      expand_paths_general(what = "mup_rocs.rds"),
       #expand_paths_general(what = "naive_logl_both_diag_and_var_rocs.rds"),
       #expand_paths_general(what = "naive_logl_only_var_rocs.rds"),
-      #expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
-      #expand_paths_general(what = "hot_only_var_rocs.rds"),
-      #SEQUOIA_AGG 
-      expand_paths_general(what = "relate_admix_both_diag_and_var_rocs.rds"),
-      expand_paths_general(what = "relate_admix_only_var_rocs.rds")
+      expand_paths_general(what = "hot_both_diag_and_var_rocs.rds"),
+      expand_paths_general(what = "hot_only_var_rocs.rds"),
+      SEQUOIA_AGG 
+      #expand_paths_general(what = "relate_admix_both_diag_and_var_rocs.rds"),
+      #expand_paths_general(what = "relate_admix_only_var_rocs.rds")
     ]
   output: 
-    outrds="results/summarized/relate-admix-all-rocs.rds"
+    outrds="results/summarized/all-rocs.rds"
   log:
     log="results/logs/gather_rocs/log.log"
   benchmark:

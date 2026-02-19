@@ -92,7 +92,7 @@ if 'sequoia_full' not in config:
 
 
 rule all:
-  input: "results/summarized/relate-admix-all-rocs.rds"
+  input: "results/summarized/all-rocs.rds"
 
 # simulate a SLiM data set.  SLiM and R seeds are set according to output path name
 # currently assumes we are pulling samples from the last three generations (9-11)

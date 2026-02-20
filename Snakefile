@@ -162,7 +162,7 @@ rule run_sequoia:
     which_markers="{seq_mark}",
     cohort_situation="{seq_cohort}"
   conda:
-    config["RENV"]
+    "r-sequoia"
   log:
     log="results/logs/run_sequoia/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/ppn-{ppn}-verr-{verr}-derr-{derr}-vmiss-{vmiss}-dmiss-{dmiss}/{seq_cohort}-{seq_mark}.log"
   benchmark:

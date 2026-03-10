@@ -87,13 +87,15 @@ Now we should be able to make some plots:
 ```{r}
 g <- ggplot(dat2, aes(x = rank, y = Fraction, fill = Ancestry)) +
   geom_col() +
-  facet_grid(mig_rate ~ scenario + ind_pop, scales = "free_x") +
+  facet_grid(mig_rate ~ ind_pop + scenario, scales = "free_x") +
   theme_bw() +
+  theme(axis.text.x = element_text(angle = 70, vjust = 0.4, hjust = 0.4)) + 
   xlab("Individuals arranged according to admixture fraction") +
   scale_fill_manual(values = c(AA = "#d7191c", AB = "#fdae61", BB = "#2c7bb6"))
+  
 
 
-ggsave(g, filename = "outputs/005/ancestry-fracts-of-sims.pdf", width = 10, height = 12)
+ggsave(g, filename = "outputs/005/ancestry-fracts-of-sims.pdf", width = 7, height = 7)
 
 g
 ```

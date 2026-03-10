@@ -501,3 +501,145 @@ So, now I just need to:
 
 It all ran great, except about 120 of the jobs ran out of memory, so I
 upped those to 8 cores and 25800 Mb.
+
+## Redoing the small-120 Sequoia runs with same cohort included
+
+I noticed that the Sequoia ROCs were the same for same_cohort_included
+and also same_cohort_excluded. Turns out that they are all excluded. I
+found updates to Sequoia2.R on my laptop that were never pushed to the
+cluster. I am wondering if I can commit and push those and then see how
+things work.
+
+Before I commit and push, I will try some test cases. Here on Feb 19 on
+Alpine I have put the old values into place so that when I do:
+
+``` sh
+(snakemake-9.13.7) login-ci4 MixedUpParents-sims-and-analyses (main)--% snakemake -np --rerun-triggers mtime --configfile config/config_120.yaml
+
+# I get
+
+Config file config/config.yaml is extended by additional config specified via the command line.
+host: login-ci4
+Building DAG of jobs...
+Nothing to be done (all requested files are present and up to date).
+1236 jobs have missing provenance/metadata so that it in part cannot be used to trigger re-runs.
+Rules with missing metadata: compute_rocs gather_rocs hot_scores mup_logls naive_logls run_sequoia slim_sim tweak2mup
+```
+
+That is great. Now, I can try removing the same_cohort_included runs
+from sequoia. There are 156 of them:
+
+    (snakemake-9.13.7) login-ci4 MixedUpParents-sims-and-analyses (main)--% find results/scenario-small_cyclone_nonWF  -path  "*sequoia/include*" | wc
+        156     156   28456
+
+So, I did:
+
+``` sh
+(snakemake-9.13.7) login-ci4 MixedUpParents-sims-and-analyses (main)--% rm  $(find results/scenario-small_cyclone_nonWF  -path  "*sequoia/include*")
+```
+
+And then we have to move the gathered results out of there, too
+
+``` sh
+(snakemake-9.13.7) login-ci4 summarized (main)--% mv all-rocs.rds Feb19-2026-all-rocs.rds
+(snakemake-9.13.7) login-ci4 summarized (main)--% pwd
+/home/eriq@colostate.edu/scratch/PROJECTS/MixedUpParents-sims-and-analyses/results/summarized
+```
+
+And now when we do a dry run again:
+
+``` sh
+(snakemake-9.13.7) login-ci4 MixedUpParents-sims-and-analyses (main)--% snakemake -np --rerun-triggers mtime --configfile config/config_120.yaml
+
+Shell command: None
+Job stats:
+job             count
+------------  -------
+all                 1
+compute_rocs      160
+gather_rocs         1
+naive_logls       160
+run_sequoia        78
+total             400
+
+```
+
+That looks totally right. sequoia being run 78 times would produce the
+156 output files I just deleted. I am not sure why naive logls is in
+there. We don’t really use it. It would be nice to remove them from
+consideration. But before I do that, I am going to try running a single
+sequoia run
+
+    results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.05-mr2-0.05/rep-5/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.5-dmiss-0.5/sequoia/include_same_cohort-only_var-simresults.rds
+
+But before I do that I see that I need to be running it on the other
+branch so that I have an R installation that works. I branched off of
+relate-admix-on-alpine to create rerun-sequoia-smalls and then I had to
+change the rule all…
+
+``` sh
+(snakemake-9.13.7) login-ci4 MixedUpParents-sims-and-analyses (relate-admix-on-alpine)--% snakemake -np --rerun-triggers mtime --configfile config/config_120.yaml --profile hpcc-profiles/slurm/alpine-smk9
+
+Shell command: None
+Job stats:
+job            count
+-----------  -------
+all                1
+gather_rocs        1
+run_sequoia       78
+total             80
+
+Reasons:
+```
+
+that looks just right.
+
+Getting sequoia for the cluster is a hassle. I could not compile it
+because of the SHLIB_ADD problem in the r-4.5.2-chunky env. So I made a
+new r-base env and included r-sequoia in it from conda. Turns out the
+conda version was 2.7.2 and I had 2.11.2 on my laptop. The old version
+had a hard time with NA in the genotypes. But in the new conda env, I
+was able to install from CRAN. Now I have version 3.2.0 on there. So
+let’s check it out:
+
+``` sh
+snakemake -p results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.02-mr2-0.02/rep-1/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.5-dmiss-0.5/sequoia/include_same_cohort-only_var-rocresults.rds --rerun-triggers mtime --configfile config/config_120.yaml --profile hpcc-profiles/slurm/alpine-smk9
+```
+
+That Finished! Sadly though, it didn’t work. None of the pairs have a
+logl_ratio. I suspect that there changes going from 2.11.2 to 3.2.0 that
+broke my code. Let’s see if I can roll it back to 2.11.2…
+
+So, I did:
+
+``` sh
+remotes::install_version("sequoia", version = "2.11.2", repos = "http://cran.us.r-project.org")
+```
+
+And that appears to have been successful. So, I am going to rerun the
+included cohort one and then I should find that it gives the same
+results as the excluded cohort one since I have not yet pushed up the
+Sequoia2.R script.
+
+I don’t get the same thing. Hmmm.. Maybe I had made some changes to that
+script already. I will check by regenerating the exclude_same_cohort
+results:
+
+``` sh
+# save the existing one by moving it
+(r-sequoia) login-ci4 MixedUpParents-sims-and-analyses (rerun-sequoia-smalls)--% mkdir SavedRes
+(r-sequoia) login-ci4 MixedUpParents-sims-and-analyses (rerun-sequoia-smalls)--% mv results/scenario-small_cyclone_nonWF/ps1-120-ps2-120-mr1-0.02-mr2-0.02/rep-1/ppn-0.5-verr-0.01-derr-0.004-vmiss-0.5-dmiss-0.5/sequoia/exclude_same_cohort-only_var-rocresults.rds SavedRes/
+
+# then regenerate it:
+ℹ Checking input data ...
+! There are 6 monomorphic (fixed) SNPs, these will be excluded
+! There are 316 SNPs scored for <50% of individuals
+ℹ After exclusion, There are  358  individuals and  565  SNPs.
+✖ Column order and/or column names in LifeHistData is unclear
+Error: Please provide LifeHistData as ID - Sex - BirthYear (- BY.min - BY.max - Year.last)
+Execution halted
+```
+
+Nope, that failed too. Weird.
+
+So,

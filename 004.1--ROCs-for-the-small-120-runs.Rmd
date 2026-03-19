@@ -52,11 +52,11 @@ meth_mark_colors <- c(
   `HOT (V+D)`   = "red",
   `HOT (V)`     = "pink",
   `MUP (V+D)`   = "purple",
-  `Naive (V+D)` = "blue",
-  `Naive (V)`   = "skyblue",
+  `Naive LR (V+D)` = "blue",
+  `Naive LR (V)`   = "skyblue",
   `RA (V+D)`    = "black",
   `RA (V)`      = "gray50",
-  `Sequoia (V)` = "orange",
+  `Sequoia (V)` = "#F0E442",
   `Sequoia (V+D)` = "brown"
 )
 
@@ -102,15 +102,22 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
     #scale_colour_brewer(type = "qual", palette = "Set1") +
     scale_colour_manual(values = meth_mark_colors) +
     scale_linetype_manual(values = fs_line_types) +
-    theme_bw() +
-    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
+    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn)) +
+    ylab("Fraction of All True Parent Offspring Pairs Correctly Identified (TPR)") +
+    xlab("Fraction of the Parents of All Candidate Offspring Incorrectly Identified (FPR)")
   
   
   # now deal with how we facet it
   if(row_facet == "miss_rate") {
     g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion)
   } else if(row_facet ==  "mig_rate") {
-    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion + miss_rate)
+    g2 <- g + facet_grid(
+      mig_rate1 ~ scenario + cohort_inclusion + miss_rate,
+      labeller = labeller(
+        mig_rate1 = function(x) paste0(as.numeric(x) * 100, "%"),
+        miss_rate = function(x) paste0(as.numeric(x) * 100, "%")
+      )
+    )
   } else if(row_facet == "samp_ppn") {
     g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion)
   } else{
@@ -121,7 +128,7 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
   ggsave(
     g2, 
     filename = outpath, 
-    width = 15, height = 9
+    width = 10, height = 8
   )
   
   outpath

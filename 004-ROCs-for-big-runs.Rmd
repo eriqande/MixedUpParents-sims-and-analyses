@@ -65,6 +65,7 @@ BR <- read_rds("stored-results/BIG-RUNS-add-ckmsim-all-rocs-2025-02-19.rds") %>%
 
 nesto <- bind_rows(BR, RA) %>%
   group_by(mig_rate1, mig_rate2, samp_ppn) %>%
+  mutate(mig_rate1 = mig_rate1, mig_rate2, samp_ppn) %>%
   nest()
 
 rm(BR)
@@ -103,7 +104,7 @@ meth_mark_colors <- c(
   `Naive LR (V)`   = "skyblue",
   `RA (V+D)`    = "black",
   `RA (V)`      = "gray50",
-  `Sequoia (V)` = "orange"
+  `Sequoia (V)` = "#F0E442"
 )
 
 fs_line_types <- c(
@@ -111,13 +112,13 @@ fs_line_types <- c(
   `Likely FS Removed` = "dotted"
 )
 
-roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet = "miss_rate") {
+roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet = "miss_rate", make_title = FALSE) {
 
   x2 <- x %>%
     mutate(
       method = replace_na(method, "sequoia"),
       full_sib_treatment = replace_na(full_sib_treatment, "none"),
-      miss_rate = var_miss_rate
+      miss_rate = var_miss_rate * 100
     ) %>%
     mutate(
       approach = case_when(
@@ -162,23 +163,34 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
       breaks = c(0, 0.25, 0.5, 0.75, 1),
       labels = c("0", "0.25", "0.5", "0.75", "1")
     ) +
-    theme_bw() +
-    ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fraction: ", samp_ppn)) +
-    xlab("Fraction of Parentage Assignments That Are Correct") +
-    ylab("Fraction of Parentage Assignments that are Incorrect")
+    #theme_bw() +
+    #ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fraction: ", samp_ppn)) +
+    xlab("Fraction of Parentage Assignments That Are Incorrect (FPR)") +
+    ylab("Fraction of Parentage Assignments that are Correct (TPR)")
    
   
   # now deal with how we facet it
   if(row_facet == "miss_rate") {
-    g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion)
+    g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion,
+                         labeller = labeller(
+                           miss_rate = function(x) paste0(as.numeric(x), "%")))
   } else if(row_facet ==  "mig_rate") {
-    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion)
+    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion,
+                         labeller = labeller(
+                           mig_rate1 = function(x) paste0(as.numeric(x) * 100, "%")))
   } else if(row_facet == "samp_ppn") {
-    g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion)
+    g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion,
+                         labeller = labeller(
+                           samp_ppn = function(x) paste0(as.numeric(x) * 100, "%")))
   } else{
     stop("Unrecognized row_facet, ", row_facet)
   }
   outpath <- str_c(outfolder, "/mig-rate_", mig_rate, "--samp-fract_", samp_ppn, ".pdf")
+  
+  if(make_title == TRUE) {  # for the supp figures, I think we really need the titles!
+    g2 <- g2 +
+      ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fract: ", samp_ppn))
+  }
   
   ggsave(
     g2, 
@@ -197,7 +209,7 @@ And now, we can use it like this:
 BOING <- nesto %>% 
   mutate(
     plot = pmap_chr(
-      .l = list(mig_rate = mig_rate1, samp_ppn = samp_ppn, x = data),
+      .l = list(mig_rate = mig_rate1, samp_ppn = samp_ppn, x = data, make_title = TRUE),
       .f = roc_page,
       .progress = TRUE
     )
@@ -234,14 +246,15 @@ roc_page("0.02",  "variable.  Fraction of Markers Randomly Missing = 0.25.", tmp
 
 ```{r}
 library(colorspace)
-library(colorblindr)
+
 palette = c(
     "#000000", "#999999",  # Black/Gray
     "#0072B2", "#56B4E9",  # Blue/Sky Blue
-    "#D55E00", "#E69F00",  # Vermilion/Orange
+    "#D55E00", "#F0E442",  # Vermilion/Orange
     "#332288", "#CC79A7",  # Indigo/Rose
     "#004D40", "#009E73"   # Dark Teal/Bluish Green
 )
+#F0E442
 
 points_plot <- tibble(x = 1:10, y = 1:10) %>%
   ggplot(aes(x = x, y = y, colour = factor(x))) +

@@ -110,7 +110,7 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
   if(row_facet == "miss_rate") {
     g2 <- g + facet_grid(miss_rate ~ scenario + cohort_inclusion)
   } else if(row_facet ==  "mig_rate") {
-    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion)
+    g2 <- g + facet_grid(mig_rate1 ~ scenario + cohort_inclusion + miss_rate)
   } else if(row_facet == "samp_ppn") {
     g2 <- g + facet_grid(samp_ppn ~ scenario + cohort_inclusion)
   } else{
@@ -130,16 +130,28 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
 ```
 
 
-
-
+Now, we are going to unnest the whole thing, and only keep the exclude_same_cohort,
+and rename some things.  This is sort of messy getting things to work in the
+original framework for plotting stuff.  Hacky...
 ```{r}
-
-BOING <- nestoSR %>% 
+unnesto <- nestoSR %>% 
+  unnest(cols = data) %>%
+  filter(cohort_inclusion == "exclude_same_cohort") %>%
+  mutate(cohort_inclusion = "Exclude Same Cohort") %>%
   mutate(
-    plot = pmap_chr(
-      .l = list(mig_rate = mig_rate1, samp_ppn = samp_ppn, x = data, outfolder = "outputs/004/SmallRun-120"),
-      .f = roc_page,
-      .progress = TRUE
+    scenario = case_when(
+      scenario == "small_cyclone_WF" ~ "Wright-Fisher (120)",
+      scenario == "small_cyclone_nonWF" ~ "non-WF (120)",
     )
   )
+
+roc_page(
+  mig_rate = "variable",
+  samp_ppn = 0.5,
+  x = unnesto,
+  outfolder = "outputs/004/SmallRun-120",
+  row_facet = "mig_rate"
+)
+
 ```
+

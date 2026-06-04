@@ -1,5 +1,5 @@
 # These rules run pretty quickly, so we make them local rules
-localrules: gather_rocs
+localrules: gather_rocs, README_example
 
 # this is a snakefile to orchestrate and run the simulations for the MUP paper.
 # We have designed simulations with data that look like trout populations.
@@ -7,12 +7,36 @@ localrules: gather_rocs
 
 import pandas as pd
 from itertools import chain
+import os
 
 # The runs are configured by using tabular configuration, with that file
 # specified in the config file.
 configfile: "config/config.yaml"
 
 sim_spec = pd.read_csv(config["sim_spec"])
+
+MUP_CONDA = config.get("mup_conda")
+if MUP_CONDA:
+  MUP_CONDA = os.path.expanduser(os.path.expandvars(str(MUP_CONDA)))
+  os.environ["MUP_CONDA"] = MUP_CONDA
+
+def require_mup_conda(wildcards):
+  if not MUP_CONDA:
+    raise ValueError(
+      "The slim_sim rule needs a MixedUpParents conda environment. "
+      "Specify it with, for example: "
+      "--config mup_conda=$HOME/miniforge3/envs/mixed-up-parents"
+    )
+  return MUP_CONDA
+
+MUP_CONDA_ENV = MUP_CONDA if MUP_CONDA else "MUP_CONDA_NOT_CONFIGURED"
+
+README_EXAMPLE_ROCS = [
+  "results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.02-mr2-0.02/rep-2/ppn-0.50-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/naive_logl_both_diag_and_var_rocs.rds",
+  "results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.02-mr2-0.02/rep-2/ppn-0.50-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/mup_rocs.rds",
+  "results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.02-mr2-0.02/rep-2/ppn-0.50-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/hot_both_diag_and_var_rocs.rds",
+  "results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.02-mr2-0.02/rep-2/ppn-0.50-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25/relate_admix_both_diag_and_var_rocs.rds",
+]
 
 # here is a function to expand file paths.  I am developing it as we go and
 # it will change as I get more rules done
@@ -94,6 +118,11 @@ if 'sequoia_full' not in config:
 rule all:
   input: "results/summarized/all-rocs.rds"
 
+
+rule README_example:
+  input: README_EXAMPLE_ROCS
+
+
 # simulate a SLiM data set.  SLiM and R seeds are set according to output path name
 # currently assumes we are pulling samples from the last three generations (9-11)
 rule slim_sim:
@@ -106,8 +135,7 @@ rule slim_sim:
     pop_size2="{ps2}",
     mig_rate1="{mr1}",
     mig_rate2="{mr2}",
-  #conda:
-  #  "/Users/eriq/mambaforge-arm64/envs/mup"
+    mup_conda=require_mup_conda,
   threads: 2 # so I don't run out of memory on my laptop
   output:
     outrds="results/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}/slim-output.rds"
@@ -116,7 +144,7 @@ rule slim_sim:
   benchmark:
     "results/benchmarks/slim_sim/scenario-{slim}/ps1-{ps1}-ps2-{ps2}-mr1-{mr1}-mr2-{mr2}/rep-{rep}.bmk"
   conda:
-    "/home/eanderson/mambaforge/envs/mixed-up-parents"
+    MUP_CONDA_ENV
   envmodules:
     "R/4.0.3"
   script:

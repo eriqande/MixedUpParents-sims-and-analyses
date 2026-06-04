@@ -3,20 +3,45 @@
 
 # MixedUpParents-sims-and-analyses
 
-Here is a way to just do just one rep (rep number 2) for one scenario
-and a few inference methods:
+The full workflow runs the large simulation studies presented in the
+paper “MixedUpParents: A New and Improved Method for Genetic Parentage1
+Assignment in Admixed Populations.” For a smaller reproducibility check,
+the Snakefile includes a `README_example` rule. It requests four
+ROC-curve outputs from replicate 2 of one `cyclone_nonWF` scenario:
+
+- `naive_logl_both_diag_and_var_rocs.rds`
+- `mup_rocs.rds`
+- `hot_both_diag_and_var_rocs.rds`
+- `relate_admix_both_diag_and_var_rocs.rds`
+
+Run a dry-run of that example with:
 
 ``` sh
-DIR="results/scenario-cyclone_nonWF/ps1-1200-ps2-1200-mr1-0.02-mr2-0.02/rep-2/ppn-0.50-verr-0.01-derr-0.004-vmiss-0.25-dmiss-0.25"
-NAIVE=naive_logl_both_diag_and_var_rocs.rds
-MUP=mup_rocs.rds
-HOT=hot_both_diag_and_var_rocs.rds
-RA=relate_admix_both_diag_and_var_rocs.rds
-
-snakemake -np $DIR/{$NAIVE,$MUP,$HOT,$RA}
+snakemake -np --use-conda  --cores 8 \
+  README_example \
+  --config mup_conda="$HOME/miniforge3/envs/mixed-up-parents"
 ```
 
-## Notes on SEDNA
+Remove `-n` to actually run the example, which will take about 30
+minutes on a typical laptop.
+
+The `mup_conda` config value should point to the conda environment used
+by `MixedUpSlimSims`/`MixedUpParents`; the workflow exports it as
+`MUP_CONDA` for `reticulate`.
+
+The RelateAdmix part of the example also expects `plink`, `admixture`,
+and `relateAdmix` to be available on `PATH`. Those dependencies are not
+handled via conda.
+
+The MUP log-likelihood rule uses Snakemake’s `--use-conda` machinery to
+create the small bedtools environment in `envs/bedtools.yaml`.
+
+## Plotting Tools
+
+The ROC figures appearing in the paper were made from the gathered
+parentage
+
+## Notes re: Running on the SEDNA Cluster
 
 Something weird goes on with SEDNA whereby the slim_sim rule writes all
 its output no problem, and then fails when returning control back to
@@ -47,8 +72,8 @@ We might be able to use –cleanup-metadata
 Note, the –use-conda on the second line is to have bedtools for
 mup_logls.
 
-You gotta define a MUP_CONDA variable, too. see the readme for
-MixedUpSlimSims for that.
+You also need to pass the `mup_conda` config value, as in the README
+example above.
 
 ## Notes on scenarios:
 

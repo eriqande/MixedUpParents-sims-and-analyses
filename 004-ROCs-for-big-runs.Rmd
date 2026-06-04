@@ -165,8 +165,8 @@ roc_page <- function(mig_rate, samp_ppn, x, outfolder = "outputs/004", row_facet
     ) +
     #theme_bw() +
     #ggtitle(str_c("Migration Rate: ", mig_rate, "   Sampled Fraction: ", samp_ppn)) +
-    xlab("Fraction of Parentage Assignments That Are Incorrect (FPR)") +
-    ylab("Fraction of Parentage Assignments that are Correct (TPR)")
+    ylab("Fraction of All True Parent Offspring Pairs Correctly Identified (TPR)") +
+    xlab("Fraction of the Parents of All Candidate Offspring Incorrectly Identified (FPR)")
    
   
   # now deal with how we facet it

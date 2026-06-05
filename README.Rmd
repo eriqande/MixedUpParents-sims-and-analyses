@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 # MixedUpParents-sims-and-analyses
 
 The full workflow runs the large simulation studies presented in the paper
-"MixedUpParents: A New and Improved Method for Genetic Parentage1
+"MixedUpParents: A New and Improved Method for Genetic Parentage
 Assignment in Admixed Populations."
 For a smaller reproducibility check, the Snakefile includes a `README_example`
 rule.  It requests four ROC-curve outputs from replicate 2 of one

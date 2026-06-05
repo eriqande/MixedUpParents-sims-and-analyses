@@ -12,3 +12,5 @@ outputs
 .positai
 003.5-developing-relate-admix-runs.nb.html
 004.1--ROCs-for-the-small-120-runs.nb.html
+006-compare-simulated-ancestry-tract-lengths-to-observed.nb.html
+007-harvest-and-present-benchmarks.nb.html

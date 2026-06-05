@@ -50,7 +50,18 @@ Snakemake's `--use-conda` machinery to create the small bedtools environment in
 
 ## Plotting Tools
 
-The ROC figures appearing in the paper were made from the gathered parentage
+The ROC figures appearing in the paper were made from the gathered parentage ROC
+curves produced by rule `gather_rocs` in the notebooks `004-ROCs-for-big-runs.Rmd`
+for the full-scale runs and `004.1--ROCs-for-the-small-120-runs.Rmd` for the smaller
+set of runs with a higher chance of Sequoia finishing in less than 24 hours.  
+
+The run time boxplots in the paper were created within the notebook
+`007-harvest-and-present-benchmarks.Rmd` using Snakemake's benchmark outputs
+for each rule invocation.
+
+Note that a separate branch of this repo (`rerun-sequoia-smalls`) was maintained for running
+the small-sample cases, and another (`relate-admix-on-alpine`) was used to run RelateAdmix
+on the Alpine cluster.  
 
 ## Notes re: Running on the SEDNA Cluster
  

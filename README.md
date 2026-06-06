@@ -36,6 +36,67 @@ handled via conda.
 The MUP log-likelihood rule uses Snakemake’s `--use-conda` machinery to
 create the small bedtools environment in `envs/bedtools.yaml`.
 
+## Full dry run on main branch
+
+A full dry-run can be done on the main branch with:
+
+``` sh
+snakemake -np --config mup_conda=$HOME/miniforge3/envs/mixed-up-parents
+```
+
+Again, the mup_conda config must point to the `mixed-up-parents` conda
+env.
+
+Such a run should produce:
+
+    Job stats:
+    job             count
+    ------------  -------
+    all                 1
+    compute_rocs     3200
+    gather_rocs         1
+    hot_scores       1280
+    mup_logls         640
+    naive_logls      1280
+    run_sequoia       300
+    slim_sim           40
+    tweak2mup         640
+    total            7382
+
+The full run uses `config/config.yaml`, which, upon inspection, you can
+see references `config/sim_spec.csv`. This is a CSV-based table that
+dictates how many replicates of each particular combination of
+population size, migration rate, sampled proportion, genotyping error
+rate, and missing genotype rate is to be simulated. The first ten lines
+of that file are:
+
+``` sh
+sim_scenario,num_reps,pop_size_1,pop_size_2,mig_rate_1,mig_rate_2,prop_sampled,err_var,err_diag,miss_var,miss_diag
+cyclone_WF,5,1200,1200,0,0,1,0.01,0.004,0,0
+cyclone_WF,5,1200,1200,0,0,1,0.01,0.004,0.15,0.15
+cyclone_WF,5,1200,1200,0,0,1,0.01,0.004,0.25,0.25
+cyclone_WF,5,1200,1200,0,0,1,0.01,0.004,0.5,0.5
+cyclone_WF,5,1200,1200,0,0,0.75,0.01,0.004,0,0
+cyclone_WF,5,1200,1200,0,0,0.75,0.01,0.004,0.15,0.15
+cyclone_WF,5,1200,1200,0,0,0.75,0.01,0.004,0.25,0.25
+cyclone_WF,5,1200,1200,0,0,0.75,0.01,0.004,0.5,0.5
+cyclone_WF,5,1200,1200,0,0,0.5,0.01,0.004,0,0
+```
+
+See the section `Making a sim-spec.csv file` for information on how to
+assemble such a file.
+
+## Separate branches
+
+There are two additional branches of this
+repository—`rerun-sequoia-smalls` and `relate-admix-on-alpine`—that hold
+configs for doing additional simulations or running additional inference
+routines, respectively.
+
+`rerun-sequoia-smalls` is maintained for running the small-sample cases,
+and `relate-admix-on-alpine` was used to run RelateAdmix on the Alpine
+cluster.
+
 ## Plotting Tools
 
 The ROC figures appearing in the paper were made from the gathered
@@ -47,11 +108,6 @@ with a higher chance of Sequoia finishing in less than 24 hours.
 The run time boxplots in the paper were created within the notebook
 `007-harvest-and-present-benchmarks.Rmd` using Snakemake’s benchmark
 outputs for each rule invocation.
-
-Note that a separate branch of this repo (`rerun-sequoia-smalls`) was
-maintained for running the small-sample cases, and another
-(`relate-admix-on-alpine`) was used to run RelateAdmix on the Alpine
-cluster.
 
 ## Notes re: Running on the SEDNA Cluster
 
@@ -87,37 +143,6 @@ mup_logls.
 You also need to pass the `mup_conda` config value, as in the README
 example above.
 
-## Notes on scenarios:
-
-**Langford simulations**
-
-Migration rates: symmetrical at 0, 2, 5, and 10% Missing indiv rate: 0,
-25, 50, 75% Missing locus rate: 0, 0.15, 0.25, 0.5
-
-5 reps of each.
-
-Don’t bother with Sequoia for the same cohort included runs, none of
-them finished!
-
-Calculate number of markers shared for each pair.
-
-**Sequoia Runs with smaller sample sizes**
-
-I am making a separate config for these. I am going to do:
-
-- sampling fract = 0.5
-- missing genotype rate = 0.25 or 0.5
-- all migration rates
-- pop sizes of 120
-
-I hope that will finish. This is all specified in a separate config
-called `config/config_120.yaml`.
-
-**Other cases**
-
-Fst = 0, hack things up so that we can tease out how much performace is
-due to SOS model vs better-estimated allele freqs.
-
 ## Making a sim-spec.csv file
 
 This is just some example code on how to make these
@@ -143,6 +168,8 @@ sim_specs <- expand_grid(
 )
 ```
 
+## Making the small (120 indivs) simulations
+
 Only do certain Sequoia runs. Based on previous runs the only ones that
 will finish in a reasonable amount of time appear to be:
 
@@ -150,7 +177,8 @@ will finish in a reasonable amount of time appear to be:
 - var only
 - missing locus proportion of 0, 0.15
 
-# Making the small (120 indivs) simulations
+I hope that will finish. This is all specified in a separate config
+called `config/config_120.yaml`.
 
 ``` r
 library(tidyverse)
